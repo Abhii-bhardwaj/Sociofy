@@ -1,0 +1,542 @@
+import mongoose from "mongoose";
+
+// ✅ User Model
+const userSchema = new mongoose.Schema(
+  {
+    // ✅ User's Email (Unique)
+    email: { type: String, required: true, unique: true },
+
+    // ✅ User's Full Name (Optional)
+    fullName: { type: String },
+
+    // ✅ Unique Username for User
+    username: { type: String, unique: true },
+
+    // ✅ Password (Only required if not using Google OAuth)
+    password: { type: String, minlength: 8 },
+
+    // ✅ Profile Picture with default placeholder
+    profilePic: { type: String, default: "placeholder.png" },
+
+    // ✅ User's Bio
+    bio: { type: String, default: "" },
+
+    // ✅ User's Posts (Relation with Post Model)
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+
+    // ✅ User's Role (Normal User or Admin)
+    role: { type: String, enum: ["user", "admin"], default: "user" },
+
+    // ✅ OTP for Email Verification
+    otp: {
+      value: { type: String },
+      expiration: { type: Date, default: Date.now, expires: 600 }, // Expires in 10 minutes
+    },
+
+    // ✅ Google OAuth ID (If Login via Google)
+    googleId: { type: String, unique: true, sparse: true },
+
+    // ✅ Followers and Following Feature
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  },
+  { timestamps: true }
+);
+
+const User = mongoose.model("User", userSchema);
+
+// ✅ Post Model
+const postSchema = new mongoose.Schema(
+  {
+    // ✅ Reference of User who created the post
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+
+    // ✅ Array of Images in the Post (For Cloudinary)
+    postImage: [
+      {
+        url: { type: String, required: true },
+        public_id: { type: String },
+      },
+    ],
+
+    // ✅ Caption of the Post
+    caption: { type: String, trim: true },
+
+    // ✅ Likes Array (User who liked the post)
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    // ✅ Comments Array (Linked with Comment Model)
+    comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
+
+    // ✅ Shares Array (User who shared the post)
+    shares: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    // ✅ Tags in the Post
+    tags: [String],
+
+    // ✅ Location where Post is Uploaded
+    location: { type: String, trim: true },
+
+    // ✅ Visibility (Who can see the post)
+    visibility: {
+      type: String,
+      enum: ["Public", "Friends Only", "Private"],
+      default: "Public",
+    },
+
+    // ✅ Soft Delete Feature
+    isDeleted: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+const Post = mongoose.model("Post", postSchema);
+
+// ✅ Comment Model with Replies
+const replySchema = new mongoose.Schema(
+  {
+    // ✅ User who replied to the comment
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+
+    // ✅ Content of the Reply
+    content: { type: String, required: true },
+
+    // ✅ Likes on the Reply
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  },
+  { timestamps: true }
+);
+
+const commentSchema = new mongoose.Schema(
+  {
+    // ✅ Post where the comment was made
+    post: { type: mongoose.Schema.Types.ObjectId, ref: "Post", required: true },
+
+    // ✅ User who commented
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+
+    // ✅ Content of the Comment
+    content: { type: String, required: true },
+
+    // ✅ Likes on the Comment
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    // ✅ Replies on the Comment
+    replies: [replySchema],
+  },
+  { timestamps: true }
+);
+
+const Comment = mongoose.model("Comment", commentSchema);
+
+// ✅ Notification Model
+const notificationSchema = new mongoose.Schema(
+  {
+    // ✅ User who received the Notification
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+
+    // ✅ User who triggered the Notification
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+
+    // ✅ Type of Notification
+    type: {
+      type: String,
+      enum: [
+        "like",
+        "comment",
+        "friend_request",
+        "message",
+        "mention",
+        "follow",
+        "post_share",
+      ],
+      required: true,
+    },
+
+    // ✅ Notification Message
+    message: { type: String, required: true },
+
+    // ✅ Mark Notification as Read or Unread
+    isRead: { type: Boolean, default: false },
+
+    // ✅ Reference to Related Post (If Applicable)
+    relatedPost: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
+  },
+  { timestamps: true }
+);
+
+const Notification = mongoose.model("Notification", notificationSchema);
+
+// ✅ Friend Request Model
+const friendRequestSchema = new mongoose.Schema(
+  {
+    // ✅ User who Sent the Friend Request
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // ✅ User who Received the Friend Request
+    receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // ✅ Status of Friend Request
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "declined", "canceled"],
+      default: "pending",
+    },
+  },
+  { timestamps: true }
+);
+
+const FriendRequest = mongoose.model("FriendRequest", friendRequestSchema);
+
+// ✅ Message Model (For Chat Functionality)
+const messageSchema = new mongoose.Schema(
+  {
+    // ✅ User who Sent the Message
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // ✅ User who Received the Message
+    receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // ✅ Content of the Message
+    content: { type: String, required: true },
+
+    // ✅ Mark as Read or Unread
+    isRead: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+const Message = mongoose.model("Message", messageSchema);
+
+// ✅ Exports All Models
+export { User, Post, Comment, Notification, FriendRequest, Message };
+
+
+
+
+
+
+
+
+
+
+
+
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    fullName: {
+      type: String,
+      required: false,
+    },
+    username: {
+      type: String,
+      required: false,
+      unique: true,
+    },
+    password: {
+      type: String,
+      minlength: 8,
+      validate: {
+        validator: function (value) {
+          // ✅ Password is required ONLY if no OAuth ID is present
+          if (!this.googleId) {
+            return value && value.length >= 8;
+          }
+          return true; // Skip validation for Google/Facebook users
+        },
+        message: "Password must be at least 8 characters long.",
+      },
+    },
+    profilePic: {
+      type: String,
+      default: "placeholder.png",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }], // New Field
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+    otp: {
+      value: { type: String },
+      expiration: { type: Date, default: Date.now, expires: 600 }, // 600 seconds (10 minutes)
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // New Field
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // New Field
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const User = mongoose.model("User", userSchema);
+
+export default User;
+
+
+
+import mongoose from "mongoose";
+
+const postSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // This will refer to the User Model
+    required: true,
+  },
+  postImage: [
+    {
+      url: { type: String, required: true },
+      public_id: { type: String }, // For Cloudinary if you use
+    },
+  ],
+  caption: {
+    type: String,
+    trim: true,
+  },
+  likes: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      likedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  comments: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      text: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      commentedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  shares: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      sharedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  tags: [
+    {
+      type: String,
+    },
+  ],
+  location: {
+    type: String,
+    trim: true,
+  },
+  visibility: {
+    type: String,
+    enum: ["Public", "Friends Only", "Private"],
+    default: "Public",
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Post = mongoose.model("Post", postSchema);
+export default Post;
+
+
+const mongoose = require("mongoose");
+
+const notificationSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  type: {
+    type: String,
+    enum: [
+      "like",
+      "comment",
+      "friend_request",
+      "message",
+      "mention",
+      "follow",
+      "post_share",
+      "event_invitation",
+    ],
+    required: true,
+  },
+  message: {
+    type: String,
+    required: true,
+  },
+  isRead: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  relatedId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Post", // or 'Comment', etc., depending on the context
+  },
+  senderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+});
+
+const Notification = mongoose.model("Notification", notificationSchema);
+
+module.exports = Notification;
+
+
+const mongoose = require("mongoose");
+
+const friendRequestSchema = new mongoose.Schema({
+  senderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User ",
+    required: true,
+  },
+  receiverId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User ",
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "declined", "canceled"],
+    default: "pending",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const FriendRequest = mongoose.model("FriendRequest", friendRequestSchema);
+
+module.exports = FriendRequest;
+
+
+const mongoose = require("mongoose");
+
+const replySchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User ",
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User ",
+    },
+  ],
+});
+
+const commentSchema = new mongoose.Schema({
+  postId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Post",
+    required: true,
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User ",
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User ",
+    },
+  ],
+  replies: [replySchema], // Array of replies
+});
+
+const Comment = mongoose.model("Comment", commentSchema);
+
+module.exports = Comment;

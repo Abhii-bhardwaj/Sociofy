@@ -1,0 +1,13 @@
+/* src/index.css */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: dark --default, light --prefersdark, synthwave, night, black;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -1,0 +1,421 @@
+import React, { useEffect, useRef } from "react";
+import { useCreatePostStore } from "../store/useCreatePostStore.js";
+import { Camera, X, CircleX } from "lucide-react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+const CreatePost = ({ isOpen, onClose }) => {
+  const {
+    images,
+    addImage,
+    removeImage,
+    caption,
+    setCaption,
+    resetState, // resetState ko import kiya
+  } = useCreatePostStore();
+  const dropZoneRef = useRef(null);
+  const sliderRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Reset state on modal close
+  const handleClose = () => {
+    resetState(); // State reset ho jayega
+    onClose(); // Modal band ho jayega
+  };
+
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        handleClose(); // ESC key pe bhi reset aur close
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
+
+  // Handle file input change or drag and drop
+  const handleFiles = (newFiles) => {
+    const selectedFiles = Array.from(newFiles).map((file) =>
+      URL.createObjectURL(file)
+    );
+    selectedFiles.forEach((file) => addImage(file));
+  };
+
+  const handleFileChange = (event) => {
+    if (event.target.files && event.target.files.length > 0) {
+      handleFiles(event.target.files);
+      event.target.value = null; // Reset input value
+    }
+  };
+
+  // Drag and Drop handlers
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    if (dropZoneRef.current) {
+      dropZoneRef.current.classList.add("border-magenta-500");
+    }
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    if (dropZoneRef.current) {
+      dropZoneRef.current.classList.remove("border-magenta-500");
+    }
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    if (dropZoneRef.current) {
+      dropZoneRef.current.classList.remove("border-magenta-500");
+    }
+    handleFiles(event.dataTransfer.files);
+  };
+
+  const removeFile = (index, e) => {
+    if (e) {
+      e.stopPropagation(); // Prevent slider click
+    }
+    removeImage(index);
+  };
+
+  const handleDropZoneClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const sliderSettings = {
+    dots: true,
+    infinite: false,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: false,
+    adaptiveHeight: true,
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md z-50 p-4 transition-opacity ${
+        isOpen
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
+      }`}>
+      <div className="bg-[#1a1f35] bg-opacity-90 rounded-xl shadow-lg p-6 w-[90%] sm:w-[75%] md:max-w-lg border border-white transition-all duration-300 scale-100">
+        <div className="flex justify-end">
+          <button onClick={handleClose}>
+            <CircleX className="-mt-4.5 -mr-4.5" />
+          </button>
+        </div>
+
+        <h1 className="text-xl sm:text-2xl font-semibold text-center text-white mb-4">
+          Create Post
+        </h1>
+
+        <div
+          ref={dropZoneRef}
+          className="relative border-dashed border-2 border-white rounded-lg h-64 sm:h-72 mb-4 flex items-center justify-center text-white text-sm overflow-hidden"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleDropZoneClick}>
+          {images.length === 0 ? (
+            <>
+              <Camera size={120} className="absolute opacity-20 text-white" />
+              <p className="text-white mt-30 z-10">
+                Drag & Drop or Click to Upload
+              </p>
+            </>
+          ) : (
+            <div className="w-full h-full">
+              <Slider
+                ref={sliderRef}
+                {...sliderSettings}
+                className="w-full h-full">
+                {images.map((fileURL, index) => (
+                  <div
+                    key={`slide-${index}-${fileURL}`}
+                    className="relative w-full h-56 sm:h-64 flex justify-center items-center">
+                    <img
+                      src={fileURL}
+                      alt={`Uploaded ${index}`}
+                      className="max-w-full max-h-full object-contain rounded-lg"
+                    />
+                    <button
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 z-10"
+                      onClick={(e) => removeFile(index, e)}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </Slider>
+            </div>
+          )}
+
+          <input
+            type="file"
+            accept="image/*, video/*"
+            className="hidden"
+            ref={fileInputRef}
+            multiple
+            onChange={handleFileChange}
+          />
+        </div>
+
+        <textarea
+          placeholder="What's on your mind?"
+          value={caption || ""} // Caption ko state se sync kiya
+          onChange={(e) => setCaption(e.target.value)} // Caption update karne ke liye
+          className="w-full h-16 px-2 bg-transparent resize-none text-white border-b border-white py-2 mb-4 focus:outline-none placeholder:text-white focus:border-magenta-500 transition-all duration-300"
+        />
+
+        <div className="flex justify-center sm:justify-center flex-wrap gap-2">
+          <button className="w-full sm:w-[48%] md:w-[50%] lg:w-[58%] xl:w-[58%] bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-all duration-300">
+            Post
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CreatePost;
+
+
+// store/useCreatePostStore.js
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+export const useCreatePostStore = create(
+  persist(
+    (set) => ({
+          images: [],
+        caption: "",
+          setCaption: (caption) => set({ caption }),
+      addImage: (image) =>
+        set((state) => ({ images: [...state.images, image] })),
+      removeImage: (index) =>
+        set((state) => {
+          const newImages = [...state.images];
+          newImages.splice(index, 1);
+          return { images: newImages };
+        }),
+      clearImages: () => set({ images: [] }),
+          resetState: () => set({ images: [], caption: null }),
+      
+    }),
+    {
+      name: "create-post-storage", // Name of the storage
+    }
+  )
+);
+
+
+
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true, // Add index for faster email lookups
+    },
+    fullName: {
+      type: String,
+      required: false,
+    },
+    username: {
+      type: String,
+      required: false,
+      unique: true,
+      index: true, // Add index for faster username lookups
+    },
+    password: {
+      type: String,
+      minlength: 8,
+      validate: {
+        validator: function (value) {
+          // ✅ Password is required ONLY if no OAuth ID is present
+          if (!this.googleId) {
+            return value && value.length >= 8;
+          }
+          return true; // Skip validation for Google/Facebook users
+        },
+        message: "Password must be at least 8 characters long.",
+      },
+    },
+    profilePic: {
+      type: String,
+      default: "placeholder.png",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }], // New Field
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+      index: true, // Add index for faster role-based queries
+    },
+    otp: {
+      value: { type: String },
+      expiration: { type: Date, default: Date.now, expires: 600 }, // 600 seconds (10 minutes)
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true, // Add index for faster Google ID lookups
+    },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // New Field
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // New Field
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const User = mongoose.model("User", userSchema);
+
+export default User;
+
+
+import mongoose from "mongoose";
+
+const postSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // This will refer to the User Model
+    required: true,
+  },
+  postImage: [
+    {
+      url: { type: String, required: true },
+      public_id: { type: String }, // For Cloudinary if you use
+    },
+  ],
+  caption: {
+    type: String,
+    trim: true,
+  },
+  likes: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      likedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  comments: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+    },
+  ],
+  shares: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      sharedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  tags: [
+    {
+      type: String,
+    },
+  ],
+  location: {
+    type: String,
+    trim: true,
+  },
+  visibility: {
+    type: String,
+    enum: ["Public", "Friends Only", "Private"],
+    default: "Public",
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Post = mongoose.model("Post", postSchema);
+export default Post;
+
+
+router.post("/user/:userId/create-post", createPost, protectRoute);
+
+
+
+import jwt from "jsonwebtoken";
+import { redis } from "../lib/redis.js";
+import User from "../models/user.model.js";
+
+export const protectRoute = async (req, res, next) => {
+  try {
+    const token = req.cookies.jwt; // Read token from cookies
+
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized - No token" });
+    }
+
+    // ✅ Verify Token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_ACTIVE_KEY);
+    } catch (err) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized - Invalid or expired token" });
+    }
+
+    console.log("Decoded Token:", decoded); // Debugging Token
+
+    // ✅ Check Redis Cache First
+    let user = await redis.get(`user:${decoded.userId}`);
+
+    if (!user) {
+      // Fetch from DB if not in cache
+      user = await User.findById(decoded.userId).select("-password");
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // ✅ Cache user in Redis (for 1 hour)
+      await redis.set(`user:${decoded.userId}`, JSON.stringify(user), {
+        EX: 60 * 60,
+      });
+    } else {
+      user = JSON.parse(user); // Parse from Redis
+    }
+
+    console.log("Authenticated User:", user); // Debugging User
+
+    req.user = user; // Attach user to request
+    next();
+  } catch (error) {
+    console.error("Error in protectRoute middleware:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+};
