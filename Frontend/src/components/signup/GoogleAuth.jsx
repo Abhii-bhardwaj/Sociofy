@@ -1,9 +1,9 @@
 import { FaGoogle } from "react-icons/fa";
 
 const GoogleAuth = () => {
-      const handleGoogleSignIn = () => {
-        window.open("http://localhost:5001/auth/google", "_self");
-      };
+  const handleGoogleSignIn = () => {
+    window.open("https://sociofy-backend.onrender.com", "_self");
+  };
   return (
     <div className="flex flex-col gap-4 mt-4">
       <button
