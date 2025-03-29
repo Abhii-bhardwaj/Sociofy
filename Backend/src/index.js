@@ -28,7 +28,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: ["https://sociofy-ynkj.onrender.com", "http://localhost:5173"],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -42,7 +42,8 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: ["https://sociofy-ynkj.onrender.com", "http://localhost:5173"],
+    
     credentials: true,
   })
 );
@@ -154,7 +155,7 @@ app.get(
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:5173/login",
+    failureRedirect: "https://sociofy-ynkj.onrender.com/login",
   }),
   async (req, res) => {
     try {
@@ -162,10 +163,10 @@ app.get(
         return res.status(401).json({ message: "Authentication failed" });
       }
       await generateToken(req.user.user._id, res);
-      res.redirect("http://localhost:5173/");
+      res.redirect("https://sociofy-ynkj.onrender.com/");
     } catch (error) {
       console.error("Error in Google OAuth callback:", error);
-      res.redirect("http://localhost:5173/login");
+      res.redirect("https://sociofy-ynkj.onrender.com/login");
     }
   }
 );
