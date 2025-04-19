@@ -1,11 +1,11 @@
 import { createClient } from "redis";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Redis Client Initialize
 const redis = createClient({
-  socket: {
-    host: "127.0.0.1", // Localhost pe Redis chala raha hai
-    port: 6379, // Redis ka default port
-  },
+  url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
 });
 
 

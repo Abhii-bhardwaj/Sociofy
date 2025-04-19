@@ -9,7 +9,7 @@ import {
   FaUserShield,
   FaEllipsisV,
 } from "react-icons/fa";
-import StatsCard from "./StatsCard";
+import StatsCard from "./statsCard";
 import { axiosInstance } from "../../lib/axios";
 import defaulProfilePic from "/placeholder.jpeg";
 
