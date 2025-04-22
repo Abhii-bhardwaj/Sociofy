@@ -5,9 +5,11 @@ dotenv.config();
 
 // Redis Client Initialize
 const redis = createClient({
-  url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
+  url: process.env.REDIS_URL,
+  socket: {
+    tls: true,
+  },
 });
-
 
 // Redis Connection Handling
 redis.on("connect", () => console.log("Redis Connected Successfully!"));
