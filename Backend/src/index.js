@@ -35,15 +35,7 @@ const app = express();
 const server = http.createServer(app);
 
 const io = initSocket(server);
-// const io = new Server(server, {
-//   cors: {
-//     origin: ["http://localhost:5173"],
-//     methods: ["GET", "POST"],
-//     credentials: true,
-//   },
-//   pingTimeout: 20000,
-//   pingInterval: 25000,
-// });
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -79,102 +71,13 @@ app.use(passport.session());
 
 app.use(helmet());
 
-app.use("/api/auth", authRoutes);
-app.use("/api/post", postRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/messages", messageRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/chatbot", chatbotRoutes);
-
-// // Socket.IO Authentication Middleware
-// io.use(async (socket, next) => {
-//   const token = socket.handshake.auth.token || socket.request.cookies.token;
-//   console.log("Socket Handshake Token Received:", token);
-
-//   if (!token) {
-//     console.log("No token provided, rejecting connection");
-//     return next(new Error("Authentication error: No token"));
-//   }
-
-//   try {
-//     console.log("JWT_ACTIVE_KEY:", process.env.JWT_ACTIVE_KEY); // Debug secret key
-//     const decoded = jwt.verify(token, process.env.JWT_ACTIVE_KEY);
-//     console.log("Decoded Token:", decoded);
-//     socket.user = decoded;
-//     next();
-//   } catch (err) {
-//     console.error("Token verification failed:", err.message);
-//     next(new Error("Authentication error: Invalid token"));
-//   }
-// });
-
-// // Socket.IO Logic
-// io.on("connection", (socket) => {
-//   console.log(`User connected: ${socket.user.userId}`);
-
-//   socket.on("joinChat", (chatId) => {
-//     socket.join(chatId);
-//     console.log(`${socket.user.userId} joined chat: ${chatId}`);
-//   });
-
-//   socket.on("sendMessage", async (message) => {
-//     const { chatId, content, receiverId } = message;
-//     const senderId = socket.user.userId;
-
-//     const messageData = {
-//       senderId,
-//       receiverId,
-//       content,
-//       chatId,
-//       timestamp: new Date().toISOString(),
-//     };
-
-//     // Save to MongoDB
-//     const newMessage = new Message({
-//       senderId,
-//       receiverId,
-//       content,
-//       chatId,
-//     });
-//     await newMessage.save();
-
-//     // Update User.chats for both sender and receiver
-//     await User.updateOne(
-//       { _id: senderId },
-//       { $push: { chats: { chatId, lastMessage: newMessage._id } } },
-//       { upsert: true }
-//     );
-//     await User.updateOne(
-//       { _id: receiverId },
-//       { $push: { chats: { chatId, lastMessage: newMessage._id } } },
-//       { upsert: true }
-//     );
-
-//     // Cache in Redis
-//     const cacheKey = `message:${chatId}:${Date.now()}`;
-//     await redis.setEx(cacheKey, 3600, JSON.stringify(messageData));
-
-//     // Create Notification
-//     await new Notification({
-//       userId: receiverId,
-//       type: "message",
-//       message: `${senderId} sent you a message`,
-//       relatedId: newMessage._id,
-//       relatedModel: "Message",
-//       senderId,
-//     }).save();
-
-//     // Emit to chat room
-//     io.to(chatId).emit("receiveMessage", messageData);
-//   });
-
-//   socket.on("disconnect", () => {
-//     console.log(`User disconnected: ${socket.user.userId}`);
-//   });
-// });
-
-// export { io };
+app.use("/auth", authRoutes);
+app.use("/post", postRoutes);
+app.use("/user", userRoutes);
+app.use("/messages", messageRoutes);
+app.use("/notifications", notificationRoutes);
+app.use("/admin", adminRoutes);
+app.use("/chatbot", chatbotRoutes);
 
 const PORT = process.env.PORT || 5001;
 
@@ -183,7 +86,6 @@ app.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-// ... (other imports and setup remain same)
 
 app.get(
   "/auth/google/callback",
@@ -224,7 +126,6 @@ app.get(
   }
 );
 
-// ... (rest of the file remains same)
 
 server.listen(PORT, () => {
   // Changed to server.listen
