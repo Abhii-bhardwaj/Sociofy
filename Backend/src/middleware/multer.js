@@ -51,17 +51,3 @@ export const uploadSingle = upload.single("profilePicture");
 // ✅ Multiple Files Upload (Post Images)
 export const uploadMultiple = upload.array("postImages", 10);
 
-// ✅ Cloudinary Direct URL Proof
-// ✔️ When file is uploaded, cloudinary will return a URL
-// ✔️ No file will be saved on your server
-
-// ✅ Example Response:
-// {
-//   url: "https://res.cloudinary.com/demo/image/upload/v12345678/image.jpg",
-//   public_id: "posts/12345678-image.jpg"
-// }
-
-// ✅ Bhai ab tera pura upload system Cloud pe shift ho gaya! 🚀
-// ✔️ No Disk Storage ✅
-// ✔️ Direct Cloud URL ✅
-// ✔️ Fast Performance ✅

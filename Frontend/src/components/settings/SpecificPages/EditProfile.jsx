@@ -109,23 +109,23 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="p-4 w-full bg-base-100">
-      <h2 className="text-2xl font-bold mb-4 text-base-content">
+    <div className="p-4 sm:p-6 w-full max-w-md sm:max-w-lg mx-auto bg-base-100 rounded-lg">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-base-content">
         Profile Settings
       </h2>
 
-      <div className="flex items-center mb-6 relative">
+      <div className="flex flex-col sm:flex-row items-center mb-6 sm:mb-8 relative">
         <div className="relative">
           <img
             alt="Profile"
-            className="rounded-full w-20 h-20 border-2 border-base-300 object-cover"
+            className="rounded-full border-2 border-base-300 object-cover w-12 h-12 sm:w-16 sm:h-16"
             src={confirmedProfilePic}
             onError={(e) => (e.target.src = "/placeholder.jpeg")}
           />
           <label
             htmlFor="profilePicInput"
-            className="absolute inset-0 flex items-center justify-center bg-base-content bg-opacity-50 rounded-full opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-            <span className="text-base-content text-sm">Change</span>
+            className="absolute inset-0 flex items-center justify-center bg-base-content bg-opacity-50 rounded-full opacity-0 hover:opacity-60 transition-opacity cursor-pointer">
+            <span className="text-base-content text-xs sm:text-sm">Change</span>
           </label>
           <input
             id="profilePicInput"
@@ -136,50 +136,56 @@ const EditProfile = () => {
           />
           {selectedFile && (
             <button
-              className="absolute -top-2 -right-2 btn btn-sm btn-success rounded-full p-1"
+              className="absolute -top-2 -right-2 btn btn-xs sm: disorder btn-success rounded-full p-1"
               onClick={handleProfilePicUpdate}
               disabled={isLoading}>
-              <FaCheck />
+              <FaCheck className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
           )}
         </div>
-        <div className="ml-4">
-          <h3 className="text-lg font-semibold text-base-content">
+        <div className="mt-4 sm:mt-0 sm:ml-4 text-center sm:text-left">
+          <h3 className="text-base sm:text-lg font-semibold text-base-content">
             {confirmedFormData.username || "Loading..."}
           </h3>
-          <p className="text-base-content/60">
+          <p className="text-base-content/60 text-sm sm:text-base">
             {confirmedFormData.email || "Loading..."}
           </p>
         </div>
       </div>
 
-      <div className="mb-4">
-        <label className="block text-base-content/80">Username</label>
+      <div className="mb-4 sm:mb-6">
+        <label className="block text-base-content/80 text-sm sm:text-base mb-2">
+          Username
+        </label>
         <input
           type="text"
           name="username"
-          className="input input-bordered w-full"
+          className="input input-bordered w-full text-sm sm:text-base"
           value={formData.username}
           onChange={handleChange}
         />
       </div>
 
-      <div className="mb-4">
-        <label className="block text-base-content/60">Email</label>
+      <div className="mb-4 sm:mb-6">
+        <label className="block text-base-content/60 text-sm sm:text-base mb-2">
+          Email
+        </label>
         <input
           type="email"
           name="email"
-          className="input input-bordered w-full"
+          className="input input-bordered w-full text-sm sm:text-base"
           value={formData.email}
           onChange={handleChange}
         />
       </div>
 
-      <div className="mb-4">
-        <label className="block text-base-content/60">Bio</label>
+      <div className="mb-4 sm:mb-6">
+        <label className="block text-base-content/60 text-sm sm:text-base mb-2">
+          Bio
+        </label>
         <textarea
           name="bio"
-          className="textarea textarea-bordered w-full resize-none"
+          className="textarea textarea-bordered w-full resize-none text-sm sm:text-base"
           rows="3"
           placeholder="Tell something about yourself..."
           value={formData.bio}
@@ -188,18 +194,24 @@ const EditProfile = () => {
       </div>
 
       {confirmedFormData.bio && (
-        <div className="mb-4">
-          <p className="text-base-content/60 font-semibold">Your Bio:</p>
-          <p className="text-base-content/80">{confirmedFormData.bio}</p>
+        <div className="mb-4 sm:mb-6">
+          <p className="text-base-content/60 font-semibold text-sm sm:text-base">
+            Your Bio:
+          </p>
+          <p className="text-base-content/80 text-sm sm:text-base">
+            {confirmedFormData.bio}
+          </p>
         </div>
       )}
 
-      <div className="flex justify-end">
-        <button className="btn btn-neutral mr-2" onClick={handleCancel}>
+      <div className="flex justify-end space-x-2 sm:space-x-3">
+        <button
+          className="btn btn-neutral btn-sm sm:btn-md"
+          onClick={handleCancel}>
           Cancel
         </button>
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-sm sm:btn-md"
           onClick={handleSaveChanges}
           disabled={isLoading}>
           Save Changes

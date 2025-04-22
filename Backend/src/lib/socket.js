@@ -18,7 +18,7 @@ let io;
 export function initSocket(server) {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:5173",
+      origin: process.env.VITE_APP_URL || "http://localhost:5173",
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -60,6 +60,37 @@ export function initSocket(server) {
     console.log(`User connected: ${userId}, Socket ID: ${socket.id}`);
 
     socket.join(userId);
+
+    // Add user to onlineUsers in Redis and emit user_online
+    redis.sAdd("onlineUsers", userId);
+    io.emit("user_online", { userId }); // Broadcast to all clients
+    console.log(`Emitted user_online for ${userId}`);
+
+    // Fetch and emit online status of chat partners
+    const emitChatPartnersStatus = async () => {
+      try {
+        const chatList = await Message.find({
+          $or: [{ senderId: userId }, { receiverId: userId }],
+        })
+          .distinct("senderId receiverId")
+          .lean();
+        const partnerIds = chatList.filter((id) => id !== userId);
+        const onlinePartners = await redis.sMembers("onlineUsers");
+        const onlinePartnerIds = partnerIds.filter((id) =>
+          onlinePartners.includes(id)
+        );
+        onlinePartnerIds.forEach((partnerId) => {
+          socket.emit("user_online", { userId: partnerId });
+        });
+        console.log(
+          `Emitted user_online for partners of ${userId}:`,
+          onlinePartnerIds
+        );
+      } catch (error) {
+        console.error(`Error fetching chat partners for ${userId}:`, error);
+      }
+    };
+    emitChatPartnersStatus();
 
     const deliverUndelivered = async () => {
       const undeliveredKey = `undelivered:${userId}`;

@@ -1,5 +1,5 @@
-import express from 'express';
-import { protectRoute } from '../middleware/auth.middleware.js';
+import express from "express";
+import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   getChatList,
   sendMessage,
@@ -8,6 +8,7 @@ import {
   getUndeliveredMessages,
   getChatSuggestions,
   fetchInitialMessages,
+  getOnlineUsers,
 } from "../controllers/message.controller.js";
 
 const router = express.Router();
@@ -29,6 +30,9 @@ router.get("/undelivered", protectRoute, getUndeliveredMessages);
 
 // Get chat suggestions for new users
 router.get("/suggestions", protectRoute, getChatSuggestions);
+
+//Get online Users
+router.get("/online", protectRoute, getOnlineUsers);
 // --- END ADD ---
 
 export default router;

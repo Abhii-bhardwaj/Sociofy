@@ -1,4 +1,3 @@
-// src/client/hooks/useNotification.hook.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useSocket } from "./useSocket.hook";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +29,7 @@ export const useNotifications = () => {
       console.log(`Unread count set to: ${unread}`);
     } catch (error) {
       console.error(`Error fetching notifications:`, error);
+      toast.error("Failed to fetch notifications");
     }
   }, [authUser]);
 
@@ -81,7 +81,7 @@ export const useNotifications = () => {
             }`}
             onClick={() => {
               if (notification.type === "message") {
-                navigate(`/messages/${notification.chatId}`);
+                navigate(`/messages`);
               } else if (
                 [
                   "like",
@@ -138,6 +138,12 @@ export const useNotifications = () => {
     [navigate, processedIds]
   );
 
+  const markNotificationsAsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
+    setUnreadCount(0);
+    console.log("All notifications marked as read in client state");
+  }, []);
+
   useEffect(() => {
     if (!socket || !connected) return;
 
@@ -146,10 +152,16 @@ export const useNotifications = () => {
       addNotification(data);
     });
 
+    socket.on("notifications_read", (data) => {
+      console.log("Notifications marked as read:", data);
+      markNotificationsAsRead();
+    });
+
     return () => {
       socket.off("notification");
+      socket.off("notifications_read");
     };
-  }, [socket, connected, addNotification]);
+  }, [socket, connected, addNotification, markNotificationsAsRead]);
 
   const clearNotification = useCallback(
     async (id) => {
@@ -170,6 +182,7 @@ export const useNotifications = () => {
         console.log(`Cleared notification ${id}, new unread count: ${unread}`);
       } catch (error) {
         console.error(`Error clearing notification ${id}:`, error);
+        toast.error("Failed to clear notification");
       }
     },
     [notifications]
@@ -184,18 +197,20 @@ export const useNotifications = () => {
       console.log("Cleared all notifications");
     } catch (error) {
       console.error(`Error clearing all notifications:`, error);
+      toast.error("Failed to clear all notifications");
     }
   }, [authUser]);
 
   const markAllAsRead = useCallback(async () => {
     try {
       await axiosInstance.post(`/notifications/mark-all-read/${authUser?._id}`);
-      await fetchNotifications(); // Refresh notifications after marking as read
-      console.log("Marked all notifications as read, refreshed notifications");
+      markNotificationsAsRead();
+      console.log("Marked all notifications as read");
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
+      toast.error("Failed to mark notifications as read");
     }
-  }, [authUser, fetchNotifications]);
+  }, [authUser, markNotificationsAsRead]);
 
   return {
     notifications,
@@ -203,6 +218,6 @@ export const useNotifications = () => {
     clearNotification,
     clearAllNotifications,
     markAllAsRead,
-    fetchNotifications, // Expose for manual refresh if needed
+    fetchNotifications,
   };
 };

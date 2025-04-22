@@ -1,12 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNotifications } from "../hooks/useNotification.hook.jsx";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 const NotificationsPage = () => {
-  const { notifications, clearNotification, clearAllNotifications } =
-    useNotifications();
+  const {
+    notifications,
+    clearNotification,
+    clearAllNotifications,
+    markAllAsRead,
+  } = useNotifications();
   const navigate = useNavigate();
+
+  // Automatically mark all notifications as read when the page loads
+  useEffect(() => {
+    if (notifications.length > 0) {
+      markAllAsRead();
+    }
+  }, [markAllAsRead, notifications.length]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "Invalid Date";
@@ -80,7 +91,7 @@ const NotificationsPage = () => {
                   {/* Actions */}
                   {notif.type === "message" && (
                     <button
-                      onClick={() => navigate(`/messages/${notif.chatId}`)}
+                      onClick={() => navigate(`/messages`)}
                       className="btn btn-ghost btn-xs mt-2">
                       View Chat
                     </button>

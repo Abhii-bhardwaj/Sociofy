@@ -21,8 +21,7 @@ const Sidebar = () => {
   const { authUser, logout } = useAuthStore();
   const { unreadCount } = useNotifications();
   useSyncSidebar();
-
-  console.log("Sidebar rendering, unreadCount:", unreadCount);
+  console.log(authUser);
 
   const handleLogout = async () => {
     try {
@@ -41,7 +40,7 @@ const Sidebar = () => {
   };
 
   const handleProfileClick = () => {
-    if (authUser?.username) {
+    if (authUser.username) {
       navigate(`/profile/${authUser.username}`);
     } else {
       navigate("/profile");
@@ -90,15 +89,15 @@ const Sidebar = () => {
         <div className="flex items-center mb-6">
           <div className="w-12 h-12 bg-base-200 rounded-full flex items-center justify-center">
             <img
-              src={authUser?.profilePic || "https://via.placeholder.com/48"}
+              src={authUser.profilePic || "/placeholder.jpeg"}
               alt="Profile Picture"
               className="w-12 h-12 object-cover rounded-full"
-              onError={(e) => (e.target.src = "https://via.placeholder.com/48")}
+              onError={(e) => (e.target.src = "/placeholder.jpeg")}
             />
           </div>
           <div className="ml-4">
             <h3 className="text-lg font-semibold text-base-content">
-              {authUser?.username || "Guest"}
+              {authUser.username || "Guest"}
             </h3>
           </div>
         </div>

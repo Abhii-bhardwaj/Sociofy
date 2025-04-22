@@ -50,13 +50,26 @@ const MessagesPage = () => {
       null
     : null;
 
+  useEffect(() => {
+    console.log("Active chat updated:", {
+      activeChatId,
+      activeChat: activeChat
+        ? {
+            id: activeChat.id || activeChat._id,
+            fullName: activeChat.fullName,
+            online: activeChat.online,
+          }
+        : null,
+    });
+  }, [activeChatId, activeChat]);
+
   const currentMessages = activeChatId ? messages[activeChatId] || [] : [];
   const isTyping = activeChatId ? typingUsers[activeChatId] || false : false;
 
   useEffect(() => {
     console.log("activeChatId changed:", activeChatId);
     if (activeChatId) {
-      fetchMessages(activeChatId); // Ensure messages are fetched on activeChatId change
+      fetchMessages(activeChatId);
     }
   }, [activeChatId, fetchMessages]);
 
@@ -132,7 +145,6 @@ const MessagesPage = () => {
   const handleChatSelect = (chatId) => {
     console.log("Selecting chat:", chatId);
     setActiveChatId(chatId);
-    // fetchMessages(chatId); // Removed from here, handled in useEffect
   };
 
   const renderDeliveryStatus = (message) => {
@@ -437,7 +449,7 @@ const MessagesPage = () => {
             <div className="p-2 sm:p-3 md:p-4 border-t border-base-300 bg-base-100 sticky bottom-0">
               <form
                 onSubmit={handleSendMessage}
-                className="flex items-center space-x-2">
+                className="flex items-center space-x-2 mb-15 sm:mb-15 md:mb-15 lg:mb-0 xl:mb-0">
                 <input
                   type="text"
                   value={newMessage}

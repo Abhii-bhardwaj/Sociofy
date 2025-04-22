@@ -4,12 +4,12 @@ import { redis } from "./redis.js";
 export const generateToken = async (userId, res) => {
   try {
     const token = jwt.sign({ userId }, process.env.JWT_ACTIVE_KEY, {
-      expiresIn: "7d",
+      expiresIn: "24h",
     });
 
     // ✅ Redis me token store karne ka sahi tareeka
     await redis.set(`token:${userId}`, token, {
-      EX: 7 * 24 * 60 * 60, // 7 din ke liye expire hoga
+      EX: 1 * 24 * 60 * 60, // 1 din ke liye expire hoga
     });
 
     res.cookie("jwt", token, {

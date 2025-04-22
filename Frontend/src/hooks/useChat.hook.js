@@ -96,7 +96,7 @@ const useChat = () => {
             unreadCount:
               message.receiverId === currentUserId && !isActiveChat ? 1 : 0,
             isTyping: false,
-            online: true,
+            online: false, // Default to false, updated by user_online
           };
           list.unshift(updatedChatEntry);
         }
@@ -118,13 +118,23 @@ const useChat = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Chat list fetched:", response.data);
-      const sortedList = response.data.sort((a, b) => {
-        if (!a.lastMessageTimestamp) return 1;
-        if (!b.lastMessageTimestamp) return -1;
-        return (
-          new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
-        );
+      const onlineUsers = await axiosInstance.get("/messages/online", {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Online users fetched:", onlineUsers.data);
+      const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
+      const sortedList = response.data
+        .map((chat) => ({
+          ...chat,
+          online: onlineUserIds.has(chat.id),
+        }))
+        .sort((a, b) => {
+          if (!a.lastMessageTimestamp) return 1;
+          if (!b.lastMessageTimestamp) return -1;
+          return (
+            new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
+          );
+        });
       setChatList(sortedList);
     } catch (error) {
       console.error("Failed to fetch chat list:", error.response || error);
@@ -145,7 +155,15 @@ const useChat = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Suggestions fetched:", response.data);
-      setSuggestions(response.data);
+      const onlineUsers = await axiosInstance.get("/messages/online", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
+      const updatedSuggestions = response.data.map((suggestion) => ({
+        ...suggestion,
+        online: onlineUserIds.has(suggestion._id),
+      }));
+      setSuggestions(updatedSuggestions);
     } catch (error) {
       console.error("Failed to fetch suggestions:", error.response || error);
     } finally {
@@ -295,6 +313,7 @@ const useChat = () => {
   }, []);
 
   const handleUserTyping = useCallback(({ userId }) => {
+    console.log(`User ${userId} is typing`);
     setTypingUsers((prev) => ({ ...prev, [userId]: true }));
     setChatList((prev) =>
       prev.map((c) => (c.id === userId ? { ...c, isTyping: true } : c))
@@ -302,25 +321,34 @@ const useChat = () => {
   }, []);
 
   const handleUserStopTyping = useCallback(({ userId }) => {
+    console.log(`User ${userId} stopped typing`);
     setTypingUsers((prev) => ({ ...prev, [userId]: false }));
     setChatList((prev) =>
       prev.map((c) => (c.id === userId ? { ...c, isTyping: false } : c))
     );
   }, []);
 
-  const handleUserOnline = useCallback((userId) => {
-    console.log("User online:", userId);
+  const handleUserOnline = useCallback((data) => {
+    const userId = data.userId;
+    console.log(`User online event received: ${userId}`);
     setChatList((prev) =>
       prev.map((c) => (c.id === userId ? { ...c, online: true } : c))
     );
+    setSuggestions((prev) =>
+      prev.map((s) => (s._id === userId ? { ...s, online: true } : s))
+    );
   }, []);
 
-  const handleUserOffline = useCallback((userId) => {
-    console.log("User offline:", userId);
+  const handleUserOffline = useCallback((data) => {
+    const userId = data.userId;
+    console.log(`User offline event received: ${userId}`);
     setChatList((prev) =>
       prev.map((c) =>
         c.id === userId ? { ...c, online: false, isTyping: false } : c
       )
+    );
+    setSuggestions((prev) =>
+      prev.map((s) => (s._id === userId ? { ...s, online: false } : s))
     );
     setTypingUsers((prev) => ({ ...prev, [userId]: false }));
   }, []);
@@ -377,7 +405,6 @@ const useChat = () => {
       }
       console.log(`Fetching messages for chat ${chatId} with token: ${token}`);
       setLoadingMessages(true);
-      // Removed setActiveChatId(chatId) from here
       try {
         const response = await axiosInstance.get(
           `/messages/messages/${chatId}`,

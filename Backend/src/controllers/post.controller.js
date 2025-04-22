@@ -16,16 +16,16 @@ export const getPaginatedPosts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const cacheKey = `posts:page:${page}:limit:${limit}`;
-    const cachedPosts = await redis.get(cacheKey);
+    // const cacheKey = `posts:page:${page}:limit:${limit}`;
+    // const cachedPosts = await redis.get(cacheKey);
 
-    if (cachedPosts) {
-      return res.status(200).json({
-        posts: JSON.parse(cachedPosts),
-        totalPages: JSON.parse(cachedPosts).totalPages || 1,
-        currentPage: page,
-      });
-    }
+    // if (cachedPosts) {
+    //   return res.status(200).json({
+    //     posts: JSON.parse(cachedPosts),
+    //     totalPages: JSON.parse(cachedPosts).totalPages || 1,
+    //     currentPage: page,
+    //   });
+    // }
 
     const posts = await Post.find()
       .populate("user", "username profilePic")
@@ -44,7 +44,7 @@ export const getPaginatedPosts = async (req, res) => {
     const totalPosts = await Post.countDocuments();
     const totalPages = Math.ceil(totalPosts / limit);
 
-    await redis.set(cacheKey, JSON.stringify(posts), "EX", 300);
+    // await redis.set(cacheKey, JSON.stringify(posts), "EX", 300);
 
     res.status(200).json({
       posts,

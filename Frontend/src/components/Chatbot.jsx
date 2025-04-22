@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { faqs } from "../lib/faqData.js";
-import axios from "axios";
+import { axiosInstance } from "../lib/axios.js";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
@@ -28,16 +28,9 @@ const Chatbot = () => {
       setIsMobileView(window.innerWidth < 768);
     };
 
-    // Initial check
     checkViewportSize();
-
-    // Add resize listener
     window.addEventListener("resize", checkViewportSize);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", checkViewportSize);
-    };
+    return () => window.removeEventListener("resize", checkViewportSize);
   }, []);
 
   const scrollToBottom = () => {
@@ -50,25 +43,18 @@ const Chatbot = () => {
 
   const submitQueryToBackend = async (query) => {
     try {
-      // Get userId from your auth system if available
       const userId = localStorage.getItem("sociofy_user_id") || null;
-
-      await axios.post("http://your-api-url/api/support/query", {
+      await axiosInstance.post("/support/query", {
         userId,
         question: query,
         email: userEmail || null,
       });
-
-      // No need to handle response as this happens in background
     } catch (error) {
       console.error("Error logging support query:", error);
-      // Silent failure is ok here as it's just for analytics
     }
   };
 
-  // Function to check for inappropriate language
   const containsInappropriateLanguage = (text) => {
-    // List of inappropriate words in different languages
     const inappropriateWords = {
       english: ["damn", "hell", "shit", "fuck", "asshole", "bitch", "bastard"],
       hindi: [
@@ -83,18 +69,14 @@ const Chatbot = () => {
       ],
       spanish: ["mierda", "joder", "puta", "coño", "pendejo"],
       french: ["merde", "putain", "connard", "salope"],
-      // Add more languages as needed
     };
 
     const lowerText = text.toLowerCase();
-
-    // Check in all languages
     for (const language in inappropriateWords) {
       if (
         inappropriateWords[language].some(
           (word) =>
             lowerText.includes(word) ||
-            // Check for partial matches with spaces or punctuation
             new RegExp(
               `\\b${word}\\b|\\b${word}[\\s.,!?]|[\\s.,!?]${word}\\b`
             ).test(lowerText)
@@ -103,11 +85,9 @@ const Chatbot = () => {
         return language;
       }
     }
-
     return false;
   };
 
-  // Function to generate appropriate response to inappropriate language
   const generateModerationResponse = (language) => {
     const responses = {
       english:
@@ -118,27 +98,20 @@ const Chatbot = () => {
         "Por favor, mantén un lenguaje respetuoso. Estoy aquí para ayudarte con preguntas sobre Sociofy.",
       french:
         "Veuillez garder un langage respectueux. Je suis là pour vous aider avec les questions concernant Sociofy.",
-      // Default fallback for other languages
       default:
         "Please keep your language respectful. I'm here to help with Sociofy support questions.",
     };
-
     return responses[language] || responses.default;
   };
 
   const processUserQuery = (query) => {
     setLoading(true);
-
-    // Log query to backend
     submitQueryToBackend(query).catch((err) => {
       console.error("Error submitting query:", err);
     });
 
-    // Check for inappropriate language
     const detectedLanguage = containsInappropriateLanguage(query);
-
     if (detectedLanguage) {
-      // Handle inappropriate language
       setTimeout(() => {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -154,11 +127,8 @@ const Chatbot = () => {
       return;
     }
 
-    // Normal processing for appropriate messages
     setTimeout(() => {
       const lowerCaseQuery = query.toLowerCase();
-
-      // Find matching FAQ
       const matchedFaq = faqs.find(
         (faq) =>
           faq.question.toLowerCase().includes(lowerCaseQuery) ||
@@ -168,11 +138,9 @@ const Chatbot = () => {
       );
 
       let botResponse;
-
       if (matchedFaq) {
         botResponse = matchedFaq.answer;
       } else {
-        // Check for keywords
         if (
           lowerCaseQuery.includes("hello") ||
           lowerCaseQuery.includes("hi") ||
@@ -191,15 +159,12 @@ const Chatbot = () => {
         } else {
           botResponse =
             "I'm not sure I understand. Could you try rephrasing your question? Or you can email our support team at support@sociofy.work.gd for more help.";
-
-          // Generate new suggestions based on query
           const newSuggestions = faqs
             .filter((faq) =>
               faq.question.toLowerCase().includes(lowerCaseQuery.split(" ")[0])
             )
             .slice(0, 3)
             .map((faq) => faq.question);
-
           if (newSuggestions.length > 0) {
             setSuggestedQuestions(newSuggestions);
           }
@@ -211,7 +176,6 @@ const Chatbot = () => {
         { id: prevMessages.length + 1, text: query, sender: "user" },
         { id: prevMessages.length + 2, text: botResponse, sender: "bot" },
       ]);
-
       setLoading(false);
     }, 600);
   };
@@ -250,8 +214,6 @@ const Chatbot = () => {
         },
       ]);
       setShowEmailInput(false);
-
-      // Submit the follow-up request
       submitQueryToBackend("Follow-up requested").catch((err) => {
         console.error("Error submitting follow-up request:", err);
       });
@@ -268,13 +230,10 @@ const Chatbot = () => {
 
   const handleSuggestedQuestion = (question) => {
     processUserQuery(question);
-
-    // Generate new suggestions
     const randomFaqs = [...faqs]
       .sort(() => 0.5 - Math.random())
       .slice(0, 3)
       .map((faq) => faq.question);
-
     setSuggestedQuestions(randomFaqs);
   };
 
@@ -295,17 +254,16 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="flex flex-col w-full h-full max-h-screen">
-      {/* Responsive container with different widths based on screen size */}
-      <div className="w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto flex flex-col h-full">
+    <div className="flex flex-col w-full h-full max-h-screen bg-base-100">
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl mx-auto flex flex-col h-full">
         <div className="flex flex-col h-full bg-base-100 shadow-xl rounded-xl overflow-hidden">
           {/* Header */}
-          <div className="bg-primary text-primary-content p-4 flex items-center">
+          <div className="bg-primary text-primary-content p-3 sm:p-4 flex items-center">
             <div className="avatar">
-              <div className="w-10 h-10 rounded-full bg-primary-focus flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary-focus flex items-center justify-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
+                  className="h-5 w-5 sm:h-6 sm:w-6"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor">
@@ -318,14 +276,18 @@ const Chatbot = () => {
                 </svg>
               </div>
             </div>
-            <div className="ml-3">
-              <h3 className="text-lg font-bold">Sociofy Support</h3>
-              <p className="text-xs opacity-80">Usually replies instantly</p>
+            <div className="ml-2 sm:ml-3">
+              <h3 className="text-base sm:text-lg font-bold">
+                Sociofy Support
+              </h3>
+              <p className="text-xs sm:text-sm opacity-80">
+                Usually replies instantly
+              </p>
             </div>
           </div>
 
-          {/* Chat messages - flex-1 makes it take available space */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+          {/* Chat messages */}
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 min-h-0 max-h-[calc(100vh-200px)]">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -337,7 +299,7 @@ const Chatbot = () => {
                     message.sender === "user"
                       ? "chat-bubble-primary"
                       : "chat-bubble-neutral"
-                  } max-w-xs md:max-w-md lg:max-w-lg`}>
+                  } max-w-[70%] sm:max-w-xs md:max-w-sm text-xs sm:text-sm`}>
                   {message.text}
                 </div>
               </div>
@@ -345,25 +307,25 @@ const Chatbot = () => {
             {loading && (
               <div className="chat chat-start">
                 <div className="chat-bubble chat-bubble-neutral flex space-x-1">
-                  <span className="loading loading-dots loading-sm"></span>
+                  <span className="loading loading-dots loading-xs sm:loading-sm"></span>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Suggested questions - Responsive layout */}
+          {/* Suggested questions */}
           {suggestedQuestions.length > 0 && (
-            <div className="p-2 bg-base-200">
-              <p className="text-xs text-base-content/60 mb-1 px-1">
+            <div className="p-2 sm:p-3 bg-base-200">
+              <p className="text-xs sm:text-sm text-base-content/60 mb-1 sm:mb-2 px-1">
                 Suggested questions:
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {suggestedQuestions.map((question, index) => (
                   <button
                     key={index}
                     onClick={() => handleSuggestedQuestion(question)}
-                    className="btn btn-xs btn-outline text-left text-wrap">
+                    className="btn btn-xs sm:btn-sm btn-outline text-left text-wrap text-xs sm:text-sm">
                     {question}
                   </button>
                 ))}
@@ -371,16 +333,16 @@ const Chatbot = () => {
             </div>
           )}
 
-          {/* Contact support buttons - Stack on mobile, side by side on larger screens */}
-          <div className="px-4 py-2 bg-base-200 flex flex-col sm:flex-row justify-center gap-2">
+          {/* Contact support buttons */}
+          <div className="px-3 sm:px-4 py-2 bg-base-200 flex flex-col sm:flex-row justify-center gap-1 sm:gap-2">
             <button
               onClick={handleContactSupport}
-              className="btn btn-sm btn-ghost text-primary">
+              className="btn btn-xs sm:btn-sm btn-ghost text-primary text-xs sm:text-sm">
               Contact Human Support
             </button>
             <button
               onClick={handleRequestFollowUp}
-              className="btn btn-sm btn-ghost text-primary">
+              className="btn btn-xs sm:btn-sm btn-ghost text-primary text-xs sm:text-sm">
               Request Follow-up
             </button>
           </div>
@@ -389,39 +351,41 @@ const Chatbot = () => {
           {showEmailInput && (
             <form
               onSubmit={handleEmailSubmit}
-              className="p-4 border-t flex flex-col sm:flex-row gap-2">
+              className="p-3 sm:p-4 pb-4 sm:pb-6 border-t flex flex-row items-center gap-1 sm:gap-2 w-full mb-4 sm:mb-0">
               <input
                 type="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
                 placeholder="Your email address"
-                className="input input-bordered flex-1"
+                className="input input-bordered flex-1 min-h-[48px] sm:min-h-[56px] p-2 sm:p-3 text-sm sm:text-base"
                 required
               />
-              <button type="submit" className="btn btn-primary">
+              <button
+                type="submit"
+                className="btn btn-primary btn-md sm:btn-lg min-w-[48px] sm:min-w-[56px]">
                 Submit
               </button>
             </form>
           )}
 
-          {/* Message input area - Responsive layout */}
+          {/* Message input area */}
           <form
             onSubmit={handleSend}
-            className="p-4 border-t flex flex-col sm:flex-row gap-2">
+            className="p-3 sm:p-4 pb-4 sm:pb-6 border-t flex flex-row items-center gap-1 sm:gap-2 w-full mb-12 sm:mb-0">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ask a question..."
-              className="input input-bordered flex-1"
+              className="input input-bordered flex-1 min-h-[48px] sm:min-h-[56px] p-2 sm:p-3 text-sm sm:text-base"
             />
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn btn-primary btn-md sm:btn-lg min-w-[48px] sm:min-w-[56px]"
               disabled={!inputValue.trim() || loading}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-5 w-5 sm:h-6 sm:w-6"
                 viewBox="0 0 20 20"
                 fill="currentColor">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />

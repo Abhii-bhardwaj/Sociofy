@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  useSettingsStore,
-} from "../../../store/useSettingsStore";
+import { useSettingsStore } from "../../../store/useSettingsStore";
 import { toast } from "react-hot-toast";
 import { axiosInstance } from "../../../lib/axios";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +16,7 @@ const AccountSettings = () => {
     updateAccountSettings,
     clearAccountSettings,
   } = useSettingsStore();
-  const { authUser } = useAuthStore(); // Get authUser for debugging
+  const { authUser } = useAuthStore();
   const navigate = useNavigate();
 
   const toggleSection = (section) => {
@@ -41,7 +39,7 @@ const AccountSettings = () => {
         { withCredentials: true }
       );
       toast.success("Password changed successfully!");
-      clearAccountSettings(); // Clear form fields
+      clearAccountSettings();
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to change password!"
@@ -66,7 +64,6 @@ const AccountSettings = () => {
           await useAuthStore.getState().logout();
           navigate("/login");
         } else {
-          // Placeholder for deactivate logic
           toast.success("Account deactivated successfully!");
         }
       } catch (error) {
@@ -79,26 +76,26 @@ const AccountSettings = () => {
   };
 
   useEffect(() => {
-    authUser; // Load user info when component mounts
-    console.log("accountSettings:", accountSettings); // Debug
+    authUser;
+    console.log("accountSettings:", accountSettings);
   }, [accountSettings]);
 
   return (
-    <div className="p-4 w-full bg-base-100">
-      <h2 className="text-2xl font-bold mb-4 text-base-content">
+    <div className="p-4 sm:p-6 w-full max-w-md sm:max-w-lg mx-auto bg-base-100 rounded-lg">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-base-content">
         Account Settings
       </h2>
 
-      <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-col items-center">
         {/* Personal Information Section */}
-        <div className="mb-4 border-b bg-base-100 border-base-300 pb-2">
+        <div className="mb-4 sm:mb-6 w-full max-w-sm sm:max-w-md border-b border-base-300 pb-2">
           <button
-            className="w-96 text-left text-lg font-semibold p-2 btn btn-neutral bg-base-200 text-base-content rounded"
+            className="w-full text-left text-base sm:text-lg font-semibold p-2 btn btn-neutral bg-base-200 text-base-content rounded"
             onClick={() => toggleSection("personal")}>
             Personal Information
           </button>
           {openSection === "personal" && (
-            <div className="w-96 p-4 bg-base-200 text-base-content rounded mt-2">
+            <div className="w-full p-4 bg-base-200 text-base-content rounded mt-2 text-sm sm:text-base">
               <p>
                 <strong>Name:</strong>{" "}
                 {authUser ? authUser.fullName : "Loading..."}
@@ -115,18 +112,18 @@ const AccountSettings = () => {
         </div>
 
         {/* Password & Security Section */}
-        <div className="mb-4 border-b border-base-300 pb-2">
+        <div className="mb-4 sm:mb-6 w-full max-w-sm sm:max-w-md border-b border-base-300 pb-2">
           <button
-            className="w-96 text-left text-lg font-semibold p-2 btn btn-neutral bg-base-200 text-base-content rounded"
+            className="w-full text-left text-base sm:text-lg font-semibold p-2 btn btn-neutral bg-base-200 text-base-content rounded"
             onClick={() => toggleSection("security")}>
             Password & Security
           </button>
           {openSection === "security" && (
-            <div className="w-96 p-4 bg-base-200 text-base-content rounded mt-2">
+            <div className="w-full p-4 bg-base-200 text-base-content rounded mt-2">
               <input
                 type="password"
                 placeholder="Current Password"
-                className="input input-bordered w-80 mb-2"
+                className="input input-bordered w-full mb-2 sm:mb-3 text-sm sm:text-base"
                 value={accountSettings.currentPassword || ""}
                 onChange={(e) =>
                   updateAccountSettings("currentPassword", e.target.value)
@@ -135,7 +132,7 @@ const AccountSettings = () => {
               <input
                 type="password"
                 placeholder="New Password"
-                className="input input-bordered w-80 mb-2"
+                className="input input-bordered w-full mb-2 sm:mb-3 text-sm sm:text-base"
                 value={accountSettings.newPassword || ""}
                 onChange={(e) =>
                   updateAccountSettings("newPassword", e.target.value)
@@ -144,14 +141,14 @@ const AccountSettings = () => {
               <input
                 type="password"
                 placeholder="Confirm New Password"
-                className="input input-bordered w-80 mb-2"
+                className="input input-bordered w-full mb-2 sm:mb-3 text-sm sm:text-base"
                 value={accountSettings.confirmNewPassword || ""}
                 onChange={(e) =>
                   updateAccountSettings("confirmNewPassword", e.target.value)
                 }
               />
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm sm:btn-md"
                 onClick={handlePasswordChange}>
                 Change Password
               </button>
@@ -160,21 +157,21 @@ const AccountSettings = () => {
         </div>
 
         {/* Account Management Section */}
-        <div className="mb-4 border-b border-base-200 pb-2">
+        <div className="mb-4 sm:mb-6 w-full max-w-sm sm:max-w-md border-b border-base-300 pb-2">
           <button
-            className="w-96 text-left text-lg font-semibold p-2 btn btn-neutral bg-base-100 text-base-content rounded"
+            className="w-full text-left text-base sm:text-lg font-semibold p-2 btn btn-neutral bg-base-200 text-base-content rounded"
             onClick={() => toggleSection("management")}>
             Account Management
           </button>
           {openSection === "management" && (
-            <div className="w-96 p-4 bg-base-200 flex text-base-content rounded mt-2">
+            <div className="w-full p-4 bg-base-200 text-base-content rounded mt-2 flex flex-col sm:flex-row sm:space-x-2">
               <button
-                className="btn btn-warning mr-2"
+                className="btn btn-warning btn-sm sm:btn-md mb-2 sm:mb-0"
                 onClick={() => handleAccountAction("deactivate")}>
                 Deactivate Account
               </button>
               <button
-                className="btn btn-error"
+                className="btn btn-error btn-sm sm:btn-md"
                 onClick={() => handleAccountAction("delete")}>
                 Permanently Delete Account
               </button>

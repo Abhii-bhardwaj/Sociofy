@@ -1,8 +1,8 @@
-import  User  from "../models/user.model.js";
-import Message from '../models/message.model.js'; // Ensure path is correct
-import {redis} from '../lib/redis.js'; // Ensure path is correct
-import { io } from '../lib/socket.js'; // Ensure path is correct
-import mongoose from 'mongoose'; // Needed for ObjectId
+import User from "../models/user.model.js";
+import Message from "../models/message.model.js"; // Ensure path is correct
+import { redis } from "../lib/redis.js"; // Ensure path is correct
+import { io } from "../lib/socket.js"; // Ensure path is correct
+import mongoose from "mongoose"; // Needed for ObjectId
 
 export const storeMessage = async (messageData) => {
   try {
@@ -342,7 +342,6 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-
 export const getChatSuggestions = async (req, res) => {
   const userId = req.user?._id; // Safe access with optional chaining
   console.log("Fetching suggestions for userId:", userId); // Debug log
@@ -350,7 +349,9 @@ export const getChatSuggestions = async (req, res) => {
   try {
     if (!userId) {
       console.log("No userId found in req.user");
-      return res.status(401).json({ message: "Authentication failed: No user ID" });
+      return res
+        .status(401)
+        .json({ message: "Authentication failed: No user ID" });
     }
 
     // Check if user exists
@@ -389,7 +390,11 @@ export const getChatSuggestions = async (req, res) => {
 
     res.status(200).json(suggestions);
   } catch (error) {
-    console.error("Error getting chat suggestions:", error.message, error.stack);
+    console.error(
+      "Error getting chat suggestions:",
+      error.message,
+      error.stack
+    );
     res.status(500).json({ message: "Server error fetching suggestions" });
   }
 };
@@ -465,11 +470,9 @@ export const markMessageAsRead = async (req, res) => {
 
     // Ensure the user marking as read is the receiver
     if (message.receiverId.toString() !== userId) {
-      return res
-        .status(403)
-        .json({
-          message: "Unauthorized: You are not the receiver of this message",
-        });
+      return res.status(403).json({
+        message: "Unauthorized: You are not the receiver of this message",
+      });
     }
 
     // Update only if not already read
@@ -596,6 +599,21 @@ export const deleteMessage = async (req, res) => {
       .json({ message: "Message deleted successfully", messageId });
   } catch (error) {
     console.error("Error deleting message:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getOnlineUsers = async (req, res) => {
+  try {
+    const onlineUserIds = await redis.sMembers("onlineUsers");
+    // Optionally fetch user details
+    const users = await User.find(
+      { _id: { $in: onlineUserIds } },
+      "username fullName profilePic"
+    ).lean();
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching online users:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -268,26 +268,20 @@ const ManageNotifications = () => {
   const renderTableContent = () => {
     return (
       <div className="overflow-x-auto -mx-4 sm:mx-0">
-        {" "}
-        {/* Negative margin on mobile to allow full bleed */}
         <table className="table w-full table-zebra">
           <thead>
             <tr>
-              <th className="hidden sm:table-cell">Sender</th>{" "}
-              {/* Hide on mobile */}
-              <th className="hidden md:table-cell">Receiver</th>{" "}
-              {/* Hide on smaller screens */}
+              <th className="hidden sm:table-cell">Sender</th>
+              <th className="hidden md:table-cell">Receiver</th>
               <th>Type</th>
               <th className="min-w-[120px]">Message</th>
-              <th className="hidden sm:table-cell">Date</th>{" "}
-              {/* Hide on mobile */}
+              <th className="hidden sm:table-cell">Date</th>
               <th className="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {displayedNotifications.map((notification) => (
               <tr key={notification._id} className="hover">
-                {/* Sender - Hidden on mobile */}
                 <td className="hidden sm:table-cell">
                   {notification.sender ? (
                     <div className="flex items-center space-x-3">
@@ -319,8 +313,6 @@ const ManageNotifications = () => {
                     <span className="badge badge-sm badge-primary">System</span>
                   )}
                 </td>
-
-                {/* Receiver - Hidden on small screens */}
                 <td className="hidden md:table-cell">
                   {notification.userId ? (
                     <div>
@@ -337,8 +329,6 @@ const ManageNotifications = () => {
                     </span>
                   )}
                 </td>
-
-                {/* Type - Always visible */}
                 <td>
                   <span
                     className={`badge badge-sm ${getTypeStyles(
@@ -357,20 +347,14 @@ const ManageNotifications = () => {
                           .join(" ")}
                   </span>
                 </td>
-
-                {/* Message - Always visible, but truncated */}
                 <td>
                   <p className="text-sm truncate max-w-[150px] sm:max-w-[250px] md:max-w-none">
                     {notification.message}
                   </p>
                 </td>
-
-                {/* Date - Hidden on mobile */}
                 <td className="hidden sm:table-cell text-xs text-base-content/70 whitespace-nowrap">
                   {formatDate(notification.createdAt)}
                 </td>
-
-                {/* Actions - Always visible */}
                 <td className="text-center whitespace-nowrap">
                   <button
                     onClick={() => handleView(notification)}
@@ -718,11 +702,12 @@ const ManageNotifications = () => {
               Notification Details
             </h2>
             <div className="space-y-3">
+              {/* Sender */}
               <div>
                 <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider">
                   Sender
                 </p>
-                <p className="font-medium mt-1 text-sm">
+                <div className="font-medium mt-1 text-sm">
                   {viewingNotification.sender ? (
                     <div className="flex items-center space-x-2">
                       <div className="avatar">
@@ -751,13 +736,14 @@ const ManageNotifications = () => {
                   ) : (
                     <span className="badge badge-primary">System</span>
                   )}
-                </p>
+                </div>
               </div>
+              {/* Receiver */}
               <div>
                 <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider">
                   Receiver
                 </p>
-                <p className="font-medium mt-1 text-sm">
+                <div className="font-medium mt-1 text-sm">
                   {viewingNotification.userId ? (
                     `${viewingNotification.userId.fullName || "N/A"} (@${
                       viewingNotification.userId.username || "N/A"
@@ -765,13 +751,14 @@ const ManageNotifications = () => {
                   ) : (
                     <span className="badge badge-success">All Users</span>
                   )}
-                </p>
+                </div>
               </div>
+              {/* Type */}
               <div>
                 <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider">
                   Type
                 </p>
-                <p className="font-medium mt-1">
+                <div className="font-medium mt-1">
                   <span
                     className={`badge ${getTypeStyles(
                       viewingNotification.type
@@ -783,23 +770,25 @@ const ManageNotifications = () => {
                       )
                       .join(" ")}
                   </span>
-                </p>
+                </div>
               </div>
+              {/* Message */}
               <div>
                 <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider">
                   Message
                 </p>
-                <p className="bg-base-200 p-3 rounded mt-1 text-sm">
+                <div className="bg-base-200 p-3 rounded mt-1 text-sm">
                   {viewingNotification.message}
-                </p>
+                </div>
               </div>
+              {/* Date */}
               <div>
                 <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider">
                   Date
                 </p>
-                <p className="font-medium mt-1 text-sm">
+                <div className="font-medium mt-1 text-sm">
                   {formatDate(viewingNotification.createdAt)}
-                </p>
+                </div>
               </div>
             </div>
             <div className="modal-action mt-5 sm:mt-6">

@@ -1,11 +1,10 @@
-// components/CreatePost.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useCreatePostStore } from "../store/useCreatePostStore.js";
 import { useAuthStore } from "../store/useAuthStore";
 import { usePostStore } from "../store/usePostStore.js";
 import { axiosInstance } from "../lib/axios";
 import { useNavigate } from "react-router-dom";
-import { Camera, X, CircleX } from "lucide-react";
+import { Camera, X } from "lucide-react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -71,17 +70,26 @@ const CreatePost = ({ isOpen, onClose, postToEdit = null }) => {
 
   const handleDragOver = (event) => {
     event.preventDefault();
-    dropZoneRef.current?.classList.add("border-magenta-500");
+    dropZoneRef.current?.classList.add(
+      "border-primary",
+      "hover:border-primary"
+    );
   };
 
   const handleDragLeave = (event) => {
     event.preventDefault();
-    dropZoneRef.current?.classList.remove("border-magenta-500");
+    dropZoneRef.current?.classList.remove(
+      "border-primary",
+      "hover:border-primary"
+    );
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
-    dropZoneRef.current?.classList.remove("border-magenta-500");
+    dropZoneRef.current?.classList.remove(
+      "border-primary",
+      "hover:border-primary"
+    );
     handleFiles(event.dataTransfer.files);
   };
 
@@ -127,7 +135,7 @@ const CreatePost = ({ isOpen, onClose, postToEdit = null }) => {
         );
         console.log("Edit API Response:", response.data);
         await editPost(postToEdit._id, response.data.post);
-        await fetchPosts(); // Refresh posts after edit
+        await fetchPosts();
         toast.success("Post updated successfully!");
       } else {
         const response = await axiosInstance.post(
@@ -140,7 +148,7 @@ const CreatePost = ({ isOpen, onClose, postToEdit = null }) => {
         );
         if (response.status === 201) {
           console.log("New post created:", response.data.post);
-          await fetchPosts(); // Refresh posts after creation
+          await fetchPosts();
           toast.success("Post created successfully!");
         }
       }
@@ -167,35 +175,38 @@ const CreatePost = ({ isOpen, onClose, postToEdit = null }) => {
 
   return (
     <div
-      className={`fixed top-0 bottom-0 right-0 md:left-64 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-md z-50 p-4 transition-opacity ${
+      className={`fixed top-0 bottom-0 left-0 right-0  mb-14 flex items-center justify-center bg-base-100/50 backdrop-blur-md z-50 p-0 sm:p-6 transition-opacity ${
         isOpen
           ? "opacity-100 pointer-events-auto"
           : "opacity-0 pointer-events-none"
-      }`}
-    >
-      <div className="bg-[#1a1f35] bg-opacity-90 rounded-xl shadow-lg p-6 w-full max-w-lg border border-white transition-all duration-300 scale-100">
+      }`}>
+      <div className="bg-base-200 bg-opacity-90 rounded-none  sm:rounded-xl shadow-xl p-3 sm:p-6 w-full h-[calc(100vh-170px)] sm:w-full sm:max-w-md md:max-w-lg sm:h-full border border-base-300 transition-all duration-300 scale-100">
         <div className="flex justify-end">
-          <button onClick={handleClose}>
-            <CircleX className="-mt-4.5 -mr-4.5" />
+          <button
+            onClick={handleClose}
+            className="btn btn-circle btn-ghost btn-sm text-base-content">
+            <X size={20} />
           </button>
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-semibold text-center text-white mb-4">
+        <h1 className="text-xl sm:text-2xl font-semibold text-center text-base-content mb-4 sm:mb-6">
           {isEditMode ? "Edit Post" : "Create Post"}
         </h1>
 
         <div
           ref={dropZoneRef}
-          className="relative border-dashed border-2 border-white rounded-lg h-64 sm:h-72 mb-4 flex items-center justify-center text-white text-sm overflow-hidden"
+          className="relative border-dashed border-2 border-base-300 hover:border-primary rounded-lg h-48 sm:h-64 mb-4 sm:mb-6 flex items-center justify-center text-base-content text-sm sm:text-base overflow-hidden"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={handleDropZoneClick}
-        >
+          onClick={handleDropZoneClick}>
           {images.length === 0 ? (
             <>
-              <Camera size={120} className="absolute opacity-20 text-white" />
-              <p className="text-white mt-30 z-10">
+              <Camera
+                size={80}
+                className="absolute opacity-20 text-base-content"
+              />
+              <p className="text-base-content mt-30 z-10">
                 Drag & Drop or Click to Upload
               </p>
             </>
@@ -204,22 +215,19 @@ const CreatePost = ({ isOpen, onClose, postToEdit = null }) => {
               <Slider
                 ref={sliderRef}
                 {...sliderSettings}
-                className="w-full h-full"
-              >
+                className="w-full h-full">
                 {images.map((imageObj, index) => (
                   <div
                     key={`slide-${index}-${imageObj.url}`}
-                    className="relative w-full h-56 sm:h-64 flex justify-center items-center"
-                  >
+                    className="relative w-full h-48 sm:h-64 flex justify-center items-center">
                     <img
                       src={imageObj.url}
                       alt={`Uploaded ${index}`}
-                      className="max-w-full max-h-full object-contain rounded-lg"
+                      className="max-w-full max-h-full object-cover rounded-lg"
                     />
                     <button
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 z-10"
-                      onClick={(e) => removeFile(index, e)}
-                    >
+                      className="absolute top-2 right-2 btn btn-error btn-sm rounded-full p-1 z-10"
+                      onClick={(e) => removeFile(index, e)}>
                       <X size={16} />
                     </button>
                   </div>
@@ -245,20 +253,15 @@ const CreatePost = ({ isOpen, onClose, postToEdit = null }) => {
             setCaption(e.target.value);
             console.log("Caption changed to:", e.target.value);
           }}
-          className="w-full h-16 px-2 bg-transparent resize-none text-white border-b border-white py-2 mb-4 focus:outline-none placeholder:text-white focus:border-magenta-500 transition-all duration-300"
+          className="w-full h-14 sm:h-20 px-2 sm:px-3 bg-transparent resize-none text-base-content border-b border-base-300 py-2 mb-4 sm:mb-6 focus:outline-none placeholder:text-base-content/50 focus:border-primary transition-all duration-300 textarea textarea-bordered"
         />
 
-        <div className="flex justify-center sm:justify-center flex-wrap gap-2">
+        <div className="flex justify-center flex-wrap gap-2">
           <button
             onClick={handlePostSubmit}
-            className="w-full sm:w-[48%] md:w-[50%] lg:w-[58%] xl:w-[58%] bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-all duration-300"
-            disabled={isSubmitting}
-          >
-            {isSubmitting
-              ? "Submitting..."
-              : isEditMode
-              ? "Update"
-              : "Post"}
+            className="btn btn-primary w-full sm:w-auto px-4 sm:px-6"
+            disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : isEditMode ? "Update" : "Post"}
           </button>
         </div>
       </div>

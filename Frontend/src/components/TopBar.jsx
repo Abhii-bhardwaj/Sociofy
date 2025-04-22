@@ -114,7 +114,7 @@ const TopBar = () => {
                     <img
                       src={user.profilePic || "https://via.placeholder.com/40"}
                       alt={user.fullName}
-                      className="w-8 h-8 xs:w-10 xs:h-10 rounded-full flex-shrink-0"
+                      className="w-8 h-8 xs:w-10 xs:h-10 object-cover rounded-full flex-shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-xs xs:text-sm truncate">
@@ -138,11 +138,8 @@ const TopBar = () => {
         </div>
       </div>
       <div className="flex items-center gap-x-2 xs:gap-x-3 sm:gap-x-4 lg:gap-x-6 flex-shrink-0">
-        <div className="relative">
-          <Bell
-            className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 hover:scale-125 cursor-pointer transition-transform duration-200 text-base-content"
-            onClick={handleNotificationsClick}
-          />
+        <div className="relative" onClick={handleNotificationsClick}>
+          <Bell className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 hover:scale-125 cursor-pointer transition-transform duration-200 text-base-content" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 xs:-top-2 xs:-right-2 badge badge-primary badge-xs">
               {unreadCount}

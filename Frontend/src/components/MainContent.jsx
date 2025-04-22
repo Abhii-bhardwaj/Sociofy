@@ -1,17 +1,23 @@
 // components/MainContent.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import PostCard from "./PostCard";
-import SidePost from "./SidePost";
+import FollowButton from "./FollowButton";
 import CreatePost from "../modal/CreatePost";
 import useSidebarStore from "../store/useSidebarStore";
 import { usePostStore } from "../store/usePostStore";
+import { useFollowStore } from "../store/useFollowStore"; // Import follow store
+import {axiosInstance} from "../lib/axios";
+import toast from "react-hot-toast";
 
 const MainContent = () => {
   const { isSidebarOpen } = useSidebarStore();
   const { posts, fetchPosts } = usePostStore();
+  const { following } = useFollowStore(); // Get following list from store
   const [editPost, setEditPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
 
   const loadPosts = useCallback(async () => {
     setIsLoading(true);
@@ -40,12 +46,41 @@ const MainContent = () => {
     }
   }, [posts, isLoading]);
 
+  const fetchSuggestions = useCallback(async () => {
+    setSuggestionsLoading(true);
+    try {
+      const { data } = await axiosInstance.get("/user/suggestions");
+
+      // Filter out users that are already being followed (double check with frontend state)
+      const followingIds = following.map((user) => user._id);
+      const filteredSuggestions = data.filter(
+        (user) => !followingIds.includes(user._id)
+      );
+
+      setSuggestions(filteredSuggestions || []);
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      toast.error("Failed to load suggestions");
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, [following]); // Add following as dependency
+
+  // Re-fetch suggestions when following list changes
+  useEffect(() => {
+    fetchSuggestions();
+  }, [fetchSuggestions, following]);
+
   const handleEditPost = (postData) => {
     setEditPost(postData);
   };
 
   const handleRetry = () => {
     loadPosts();
+  };
+
+  const handleRefreshSuggestions = () => {
+    fetchSuggestions();
   };
 
   const SkeletonLoader = () => (
@@ -72,6 +107,26 @@ const MainContent = () => {
         </div>
       ))}
     </div>
+  );
+
+  const SuggestionSkeletonLoader = () => (
+    <div className="space-y-4">
+      {[...Array(5)].map((_, index) => (
+        <div key={index} className="flex items-center gap-3 p-2">
+          <div className="skeleton h-12 w-12 rounded-full bg-base-300"></div>
+          <div className="flex flex-col gap-1 flex-1">
+            <div className="skeleton h-4 w-24 bg-base-300"></div>
+            <div className="skeleton h-3 w-32 bg-base-300"></div>
+          </div>
+          <div className="skeleton h-8 w-16 bg-base-300 rounded-full"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Filter out suggestions in real-time when following changes
+  const filteredSuggestions = suggestions.filter(
+    (suggestion) => !following.some((user) => user._id === suggestion._id)
   );
 
   return (
@@ -141,11 +196,77 @@ const MainContent = () => {
       </div>
       <div className="hidden lg:block lg:w-2/5 p-4 overflow-y-auto min-h-screen bg-base-100 m-auto border-l-4 border-base-300">
         <div className="space-y-4">
-          <SidePost
-            image="https://storage.googleapis.com/a1aa/image/55gR71C6xAAb4OBtMyDPDmumdrADOgzgIz-r8R17hAg.jpg"
-            title="Side Post Title"
-            content="This is a side post content."
-          />
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">People You May Know</h2>
+            <button
+              onClick={handleRefreshSuggestions}
+              className="btn btn-ghost btn-sm"
+              disabled={suggestionsLoading}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                className="bi bi-arrow-clockwise"
+                viewBox="0 0 16 16">
+                <path
+                  fillRule="evenodd"
+                  d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                />
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+              </svg>
+            </button>
+          </div>
+
+          {suggestionsLoading ? (
+            <SuggestionSkeletonLoader />
+          ) : filteredSuggestions.length > 0 ? (
+            <div className="space-y-4">
+              {filteredSuggestions.map((user) => (
+                <div
+                  key={user._id}
+                  className="flex items-center gap-3 p-2 hover:bg-base-200 rounded-lg transition-colors">
+                  <div className="avatar">
+                    <div className="w-12 h-12 rounded-full">
+                      <img
+                        src={user.profilePic || "/default-user-image.jpg"}
+                        alt={user.username}
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="font-medium">
+                      {user.username || "Unknown User"}
+                    </h3>
+                    <p className="text-sm text-base-content/70">
+                      {user.fullName || ""}
+                    </p>
+                  </div>
+
+                  <FollowButton userId={user._id} initialFollowing={false} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-4">
+              <p className="text-base-content/60">No suggestions available</p>
+              <button
+                onClick={handleRefreshSuggestions}
+                className="btn btn-ghost btn-sm text-primary mt-2">
+                Refresh
+              </button>
+            </div>
+          )}
+
+          {filteredSuggestions.length > 0 && (
+            <div className="mt-6 text-center">
+              <button className="btn btn-ghost btn-sm text-primary">
+                See More
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
