@@ -22,7 +22,7 @@ const getUserIdFromToken = (token) => {
 const useChat = () => {
   console.log("--- useChat Hook Executing ---");
 
-  const { authUser, token } = useAuthStore();
+  const { authUser, token, checkAuth } = useAuthStore();
   const currentUserId = authUser?._id || null; // Directly use authUser._id
 
 
@@ -138,33 +138,33 @@ const fetchChatList = useCallback(async () => {
 }, [token, currentUserId]);
 
 const loadSuggestions = useCallback(async () => {
-  if (!token || !currentUserId) {
-    console.log("No token or currentUserId, skipping loadSuggestions");
-    setLoadingSuggestions(false);
-    return;
-  }
-  console.log("Fetching suggestions with token:", token);
-  setLoadingSuggestions(true);
-  try {
-    const response = await axiosInstance.get("/messages/suggestions", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log("Suggestions fetched:", response.data);
-    const onlineUsers = await axiosInstance.get("/messages/online", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
-    const updatedSuggestions = response.data.map((suggestion) => ({
-      ...suggestion,
-      online: onlineUserIds.has(suggestion._id),
-    }));
-    setSuggestions(updatedSuggestions);
-  } catch (error) {
-    console.error("Failed to fetch suggestions:", error.response || error);
-  } finally {
-    setLoadingSuggestions(false);
-  }
-}, [token, currentUserId]);
+    if (!token || !currentUserId) {
+      console.log("No token or currentUserId, skipping loadSuggestions");
+      setLoadingSuggestions(false);
+      return;
+    }
+    console.log("Fetching suggestions with token:", token);
+    setLoadingSuggestions(true);
+    try {
+      const response = await axiosInstance.get("/messages/suggestions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("Suggestions fetched:", response.data);
+      const onlineUsers = await axiosInstance.get("/messages/online", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
+      const updatedSuggestions = response.data.map((suggestion) => ({
+        ...suggestion,
+        online: onlineUserIds.has(suggestion._id),
+      }));
+      setSuggestions(updatedSuggestions);
+    } catch (error) {
+      console.error("Failed to fetch suggestions:", error.response || error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, [token, currentUserId]);
 
   const handleIncomingMessage = useCallback(
     (message) => {
@@ -604,45 +604,41 @@ const loadSuggestions = useCallback(async () => {
   ]);
 
 useEffect(() => {
-    console.log("useEffect for initial fetch - Conditions:", {
-      token: !!token,
-      userId: currentUserId,
-      connected: connected,
-    });
+  console.log("useEffect for initial fetch - Conditions:", {
+    token: !!token,
+    userId: currentUserId,
+    connected: connected,
+  });
 
-    const initializeChat = async () => {
-      if (!token && currentUserId) {
-        console.log("No token, triggering checkAuth");
-        await checkAuth();
-        return;
-      }
+  const initializeChat = async () => {
+    if (!token && currentUserId) {
+      console.log("No token, triggering checkAuth");
+      await checkAuth();
+      return;
+    }
 
-      if (token && currentUserId && connected) {
-        console.log("All conditions met, triggering fetchChatList and loadSuggestions");
-        fetchChatList();
-        loadSuggestions();
-      } else {
-        console.log("Some conditions not met, skipping initial fetch");
-        setLoadingInitial(false);
-        setLoadingSuggestions(false);
-      }
-    };
+    if (token && currentUserId && connected) {
+      console.log(
+        "All conditions met, triggering fetchChatList and loadSuggestions"
+      );
+      fetchChatList();
+      loadSuggestions();
+    } else {
+      console.log("Some conditions not met, skipping initial fetch");
+      setLoadingInitial(false);
+      setLoadingSuggestions(false);
+    }
+  };
 
-    initializeChat();
-  }, [token, currentUserId, connected, fetchChatList, loadSuggestions, checkAuth]);
-
-  if (token && currentUserId && connected) {
-    console.log(
-      "All conditions met, triggering fetchChatList and loadSuggestions"
-    );
-    fetchChatList();
-    loadSuggestions();
-  } else {
-    console.log("Some conditions not met, skipping initial fetch");
-    setLoadingInitial(false);
-    setLoadingSuggestions(false);
-  }
-}, [token, currentUserId, connected, fetchChatList, loadSuggestions]);
+  initializeChat();
+}, [
+  token,
+  currentUserId,
+  connected,
+  fetchChatList,
+  loadSuggestions,
+  checkAuth,
+]);
 
   useEffect(() => {
     if (activeChatId && connected && socket) {
