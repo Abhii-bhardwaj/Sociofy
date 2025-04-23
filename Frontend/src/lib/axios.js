@@ -16,3 +16,15 @@ axiosInstance.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Add response interceptor for debugging
+axiosInstance.interceptors.response.use(
+  (response) => {
+    console.log("Response headers:", response.headers); // Debug cookies
+    return response;
+  },
+  (error) => {
+    console.error("Axios error:", error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);

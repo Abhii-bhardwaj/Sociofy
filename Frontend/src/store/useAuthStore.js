@@ -19,27 +19,16 @@ export const useAuthStore = create((set) => ({
   checkAuth: async () => {
     try {
       const { data } = await axiosInstance.get("/auth/check");
-      const tokenFromCookie = document.cookie.split("jwt=")[1]?.split(";")[0];
-
-      if (tokenFromCookie) {
-        localStorage.setItem("token", tokenFromCookie);
-        console.log(
-          "checkAuth - Token refreshed from cookie:",
-          tokenFromCookie
-        );
-      } else if (data.token) {
-        localStorage.setItem("token", data.token);
-        console.log("checkAuth - Token set from response:", data.token);
-      } else {
-        console.error("checkAuth - No token found in response or cookie");
-      }
-
       set({
-        authUser: data.user || data,
+        authUser: data.user,
         isCheckingAuth: false,
       });
-      localStorage.setItem("authUser", JSON.stringify(data.user || data));
-      emitter.emit("USER_UPDATED", data.user || data);
+      localStorage.setItem("authUser", JSON.stringify(data.user));
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        console.log("checkAuth - Token set from response:", data.token);
+      }
+      emitter.emit("USER_UPDATED", data.user);
     } catch (error) {
       console.error("checkAuth - User not authenticated:", error.message);
       set({ authUser: null, isCheckingAuth: false });
@@ -89,21 +78,14 @@ export const useAuthStore = create((set) => ({
   login: async (data) => {
     set({ isLoggingIn: true, error: null });
     try {
-      const response = await axiosInstance.post("/auth/login", data);
-      if (response.status === 200) {
-        const token =
-          response.data.token ||
-          document.cookie.split("jwt=")[1]?.split(";")[0];
-        console.log("login - Fetched token:", token);
-        if (token) {
-          localStorage.setItem("token", token);
-          console.log(
-            "login - Token set in localStorage:",
-            localStorage.getItem("token")
-          );
-        } else {
-          console.error("login - No token found in response or cookie");
-        }
+      const response = await axiosInstance.post("/auth/login", data, {
+        withCredentials: true,
+      });
+      const token = response.data.token;
+      console.log("Login - Token from response:", token);
+
+      if (token) {
+        localStorage.setItem("token", token);
         set({ authUser: { ...response.data, role: response.data.role } });
         localStorage.setItem(
           "authUser",
@@ -114,6 +96,8 @@ export const useAuthStore = create((set) => ({
           ...response.data,
           role: response.data.role,
         });
+      } else {
+        throw new Error("No token received in login response");
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
@@ -124,7 +108,7 @@ export const useAuthStore = create((set) => ({
 
   logout: async () => {
     try {
-      await axiosInstance.get("/auth/logout");
+      await axiosInstance.get("/auth/logout", { withCredentials: true });
       localStorage.removeItem("authUser");
       localStorage.removeItem("token");
       set({ authUser: null });
