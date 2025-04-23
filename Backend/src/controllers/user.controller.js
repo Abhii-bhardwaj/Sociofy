@@ -667,7 +667,7 @@ export const fetchSavedPosts = async (req, res) => {
 
     // Instead of checking for savedPosts in User, find all posts where this user ID exists in the save array
     const savedPosts = await Post.find({
-      "save.userId": userId,
+      "saved.userId": userId,
       isDeleted: { $ne: true },
     })
       .populate("user", "username profilePic") // Changed from userId to user based on your schema

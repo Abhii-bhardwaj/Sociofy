@@ -57,7 +57,6 @@ export const getPaginatedPosts = async (req, res) => {
   }
 };
 
-
 export const editPost = async (req, res) => {
   const { postId } = req.params;
   const userId = req.user._id.toString();
@@ -373,17 +372,17 @@ export const savePost = async (req, res) => {
 
     // Check if user has already saved this post
     // Using findIndex to check if the user's ID exists in the saves array
-    const saveIndex = post.save.findIndex(
+    const savedIndex = post.saved.findIndex(
       (item) => item.userId && item.userId.toString() === userId.toString()
     );
 
     let action;
 
-    if (saveIndex === -1) {
+    if (savedIndex === -1) {
       // User hasn't saved this post yet, use MongoDB's update operator to add to the saves array
       await Post.findByIdAndUpdate(postId, {
         $push: {
-          save: {
+          saved: {
             userId: userId,
             savedAt: new Date(),
           },
@@ -394,7 +393,7 @@ export const savePost = async (req, res) => {
       // User has already saved this post, use MongoDB's update operator to remove from the saves array
       await Post.findByIdAndUpdate(postId, {
         $pull: {
-          save: {
+          saved: {
             userId: userId,
           },
         },
@@ -490,7 +489,9 @@ export const deleteComment = async (req, res) => {
       comment.userId.toString() !== userId &&
       post.user.toString() !== userId
     ) {
-      return res.status(403).json({ message: "Unauthorized to delete comment" });
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to delete comment" });
     }
 
     await Comment.findByIdAndDelete(commentId);
@@ -690,4 +691,3 @@ export const likeReply = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-

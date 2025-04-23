@@ -111,10 +111,15 @@ export const useAuthStore = create((set) => ({
       await axiosInstance.get("/auth/logout", { withCredentials: true });
       localStorage.removeItem("authUser");
       localStorage.removeItem("token");
-      set({ authUser: null });
-      document.cookie = `jwt=; expires=${new Date(0).toUTCString()}; path=/;`;
+      // Clear sessionStorage to prevent lastRoute restoration
+      sessionStorage.removeItem("lastRoute");
+      set({ authUser: null, token: null });
+      document.cookie = `jwt=; expires=${new Date(
+        0
+      ).toUTCString()}; path=/; sameSite=None; secure`;
       emitter.emit("USER_UPDATED", null);
-      window.location.reload();
+      // Redirect to login instead of reload
+      window.location.href = "/login";
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Logout failed";
       toast.error(errorMsg);

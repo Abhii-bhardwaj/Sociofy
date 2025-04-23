@@ -137,11 +137,26 @@ export const usePostStore = create((set, get) => ({
   Save: async (postId) => {
     try {
       const { data } = await axiosInstance.post(`/post/${postId}/save`);
-      // console.log(`Post ${postId} ${data.saved ? "saved" : "unsaved"}`);
+      set((state) => ({
+        posts: state.posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                saved: data.saved
+                  ? [
+                      ...post.saved,
+                      { userId: data.userId, savedAt: new Date() },
+                    ]
+                  : post.saved.filter((saved) => saved.userId !== data.userId),
+              }
+            : post
+        ),
+      }));
+      console.log(`Post ${postId} ${data.saved ? "saved" : "unsaved"}`);
       toast.success(`Post ${data.saved ? "saved" : "unsaved"}`);
       return data.saved;
     } catch (error) {
-      console.error("Error toggling save:", error);
+      console.error("Error toggling save:", error.message, error.stack);
       toast.error(error.response?.data?.message || "Failed to toggle save");
       throw error;
     }
@@ -365,6 +380,7 @@ export const usePostStore = create((set, get) => ({
                   likes: Array.isArray(data.likes) ? data.likes : post.likes,
                   comments: data.comments || post.comments,
                   shares: data.shares || post.shares,
+                  saved: data.saved || post.saved, // Updated from save to saved
                 }
               : post
           ),

@@ -45,7 +45,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: [ process.env.VITE_APP_URL || "http://localhost:5173"],
+    origin: process.env.VITE_APP_URL || "https://sociofy-ynkj.onrender.com",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -126,6 +126,11 @@ app.get(
   }
 );
 
+// Error handling middleware (optional, for debugging)
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err.message);
+  res.status(500).json({ message: "Server error" });
+});
 
 server.listen(PORT, () => {
   // Changed to server.listen
