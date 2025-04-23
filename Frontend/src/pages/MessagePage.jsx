@@ -1,3 +1,4 @@
+// pages/MessagePage.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import useChat from "../hooks/useChat.hook";
 import {
@@ -51,7 +52,7 @@ const MessagesPage = () => {
     : null;
 
   useEffect(() => {
-    console.log("Active chat updated:", {
+    console.log("MessagesPage - Active chat updated:", {
       activeChatId,
       activeChat: activeChat
         ? {
@@ -60,14 +61,16 @@ const MessagesPage = () => {
             online: activeChat.online,
           }
         : null,
+      chatListLength: chatList.length,
+      suggestionsLength: suggestions.length,
     });
-  }, [activeChatId, activeChat]);
+  }, [activeChatId, activeChat, chatList, suggestions]);
 
   const currentMessages = activeChatId ? messages[activeChatId] || [] : [];
   const isTyping = activeChatId ? typingUsers[activeChatId] || false : false;
 
   useEffect(() => {
-    console.log("activeChatId changed:", activeChatId);
+    console.log("MessagesPage - activeChatId changed:", activeChatId);
     if (activeChatId) {
       fetchMessages(activeChatId);
     }
@@ -80,7 +83,7 @@ const MessagesPage = () => {
   }, [activeChatId, currentMessages]);
 
   useEffect(() => {
-    console.log("Initial load - Triggering loadSuggestions");
+    console.log("MessagesPage - Triggering loadSuggestions");
     loadSuggestions();
   }, [loadSuggestions]);
 
@@ -138,12 +141,12 @@ const MessagesPage = () => {
   );
 
   const handleBackToChats = () => {
-    console.log("Back button clicked, clearing activeChatId");
+    console.log("MessagesPage - Back button clicked, clearing activeChatId");
     setActiveChatId(null);
   };
 
   const handleChatSelect = (chatId) => {
-    console.log("Selecting chat:", chatId);
+    console.log("MessagesPage - Selecting chat:", chatId);
     setActiveChatId(chatId);
   };
 
@@ -198,132 +201,124 @@ const MessagesPage = () => {
               Loading chats...{" "}
               <span className="loading loading-spinner loading-sm ml-2"></span>
             </div>
+          ) : chatList.length > 0 ? (
+            <div className="border-b border-base-200 pb-2">
+              {chatList.map((chat) => (
+                <div
+                  key={chat.id}
+                  className={`flex items-center p-2 sm:p-3 cursor-pointer border-b border-base-200 hover:bg-base-200 transition-colors duration-150 ${
+                    activeChatId === chat.id ? "bg-base-300 font-semibold" : ""
+                  }`}
+                  onClick={() => handleChatSelect(chat.id)}>
+                  <div className="avatar mr-2 sm:mr-3 flex-shrink-0">
+                    <div className="w-8 sm:w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+                      <img
+                        src={
+                          chat.profilePic ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            chat.fullName || "?"
+                          )}&background=random`
+                        }
+                        alt={chat.fullName || "Chat user"}
+                        onError={(e) =>
+                          (e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            chat.fullName || "?"
+                          )}&background=random`)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-center">
+                      <h3
+                        className={`truncate text-sm sm:text-base ${
+                          activeChatId === chat.id ? "" : "font-medium"
+                        }`}>
+                        {chat.fullName || "Unknown User"}
+                      </h3>
+                      {chat.lastMessageTimestamp && (
+                        <span className="text-xs text-base-content opacity-60 ml-2 flex-shrink-0">
+                          {formatTimestamp(chat.lastMessageTimestamp)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center text-xs sm:text-sm mt-1">
+                      {chat.isTyping ? (
+                        <p className="text-info italic truncate">typing...</p>
+                      ) : (
+                        <p className="truncate text-base-content opacity-70">
+                          {chat.lastMessage || "No messages yet"}
+                        </p>
+                      )}
+                      {chat.unreadCount > 0 && (
+                        <span className="badge badge-primary badge-xs sm:badge-sm ml-2">
+                          {chat.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-            <>
-              {chatList.length > 0 ? (
-                <div className="border-b border-base-200 pb-2">
-                  {chatList.map((chat) => (
-                    <div
-                      key={chat.id}
-                      className={`flex items-center p-2 sm:p-3 cursor-pointer border-b border-base-200 hover:bg-base-200 transition-colors duration-150 ${
-                        activeChatId === chat.id
-                          ? "bg-base-300 font-semibold"
-                          : ""
-                      }`}
-                      onClick={() => handleChatSelect(chat.id)}>
-                      <div className="avatar mr-2 sm:mr-3 flex-shrink-0">
-                        <div className="w-8 sm:w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
-                          <img
-                            src={
-                              chat.profilePic ||
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                chat.fullName || "?"
-                              )}&background=random`
-                            }
-                            alt={chat.fullName || "Chat user"}
-                            onError={(e) =>
-                              (e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                chat.fullName || "?"
-                              )}&background=random`)
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="flex-1 overflow-hidden">
-                        <div className="flex justify-between items-center">
-                          <h3
-                            className={`truncate text-sm sm:text-base ${
-                              activeChatId === chat.id ? "" : "font-medium"
-                            }`}>
-                            {chat.fullName || "Unknown User"}
-                          </h3>
-                          {chat.lastMessageTimestamp && (
-                            <span className="text-xs text-base-content opacity-60 ml-2 flex-shrink-0">
-                              {formatTimestamp(chat.lastMessageTimestamp)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex justify-between items-center text-xs sm:text-sm mt-1">
-                          {chat.isTyping ? (
-                            <p className="text-info italic truncate">
-                              typing...
-                            </p>
-                          ) : (
-                            <p className="truncate text-base-content opacity-70">
-                              {chat.lastMessage || "No messages yet"}
-                            </p>
-                          )}
-                          {chat.unreadCount > 0 && (
-                            <span className="badge badge-primary badge-xs sm:badge-sm ml-2">
-                              {chat.unreadCount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 text-base-content opacity-70 text-center text-sm">
-                  No active chats yet.
-                </div>
-              )}
-
-              <div className="p-2 sm:p-4">
-                <h3 className="text-xs sm:text-sm font-semibold text-base-content opacity-80 mb-2">
-                  Suggestions
-                </h3>
-                {loadingSuggestions ? (
-                  <div className="text-base-content opacity-70 flex items-center justify-center text-sm">
-                    Loading suggestions...{" "}
-                    <span className="loading loading-spinner loading-sm ml-2"></span>
-                  </div>
-                ) : suggestions.length > 0 ? (
-                  suggestions.map((suggestion) => (
-                    <div
-                      key={suggestion._id}
-                      className={`flex items-center p-2 hover:bg-base-200 cursor-pointer rounded-lg mb-1 transition-colors duration-150 ${
-                        activeChatId === suggestion._id
-                          ? "bg-base-300 font-semibold"
-                          : ""
-                      }`}
-                      onClick={() => handleChatSelect(suggestion._id)}>
-                      <div className="avatar mr-2 flex-shrink-0">
-                        <div className="w-6 sm:w-8 rounded-full">
-                          <img
-                            src={
-                              suggestion.profilePic ||
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                suggestion.fullName || "?"
-                              )}&background=random`
-                            }
-                            alt={suggestion.fullName || "Suggested user"}
-                            onError={(e) =>
-                              (e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                suggestion.fullName || "?"
-                              )}&background=random`)
-                            }
-                          />
-                        </div>
-                      </div>
-                      <span className="text-xs sm:text-sm truncate">
-                        {suggestion.fullName || "Unknown User"}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-base-content opacity-70 text-center text-sm">
-                    No suggestions available.
-                    <button
-                      className="btn btn-primary btn-xs mt-2"
-                      onClick={loadSuggestions}>
-                      Refresh
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
+            <div className="p-4 text-base-content opacity-70 text-center text-sm">
+              No active chats yet.
+            </div>
           )}
+
+          <div className="p-2 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-semibold text-base-content opacity-80 mb-2">
+              Suggestions
+            </h3>
+            {loadingSuggestions ? (
+              <div className="text-base-content opacity-70 flex items-center justify-center text-sm">
+                Loading suggestions...{" "}
+                <span className="loading loading-spinner loading-sm ml-2"></span>
+              </div>
+            ) : suggestions.length > 0 ? (
+              suggestions.map((suggestion) => (
+                <div
+                  key={suggestion._id}
+                  className={`flex items-center p-2 hover:bg-base-200 cursor-pointer rounded-lg mb-1 transition-colors duration-150 ${
+                    activeChatId === suggestion._id
+                      ? "bg-base-300 font-semibold"
+                      : ""
+                  }`}
+                  onClick={() => handleChatSelect(suggestion._id)}>
+                  <div className="avatar mr-2 flex-shrink-0">
+                    <div className="w-6 sm:w-8 rounded-full">
+                      <img
+                        src={
+                          suggestion.profilePic ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            suggestion.fullName || "?"
+                          )}&background=random`
+                        }
+                        alt={suggestion.fullName || "Suggested user"}
+                        onError={(e) =>
+                          (e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            suggestion.fullName || "?"
+                          )}&background=random`)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xs sm:text-sm truncate">
+                    {suggestion.fullName || "Unknown User"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-base-content opacity-70 text-center text-sm">
+                No suggestions available.
+                <button
+                  className="btn btn-primary btn-xs mt-2"
+                  onClick={loadSuggestions}>
+                  Refresh
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

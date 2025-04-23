@@ -23,15 +23,8 @@ const useChat = () => {
   console.log("--- useChat Hook Executing ---");
 
   const { authUser, token } = useAuthStore();
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const currentUserId = authUser?._id || null; // Directly use authUser._id
 
-  useEffect(() => {
-    const newUserId = getUserIdFromToken(token);
-    console.log(
-      `Token changed, calculated userId: ${newUserId}, token: ${token}`
-    );
-    setCurrentUserId(newUserId);
-  }, [token]);
 
   const [chatList, setChatList] = useState([]);
   const [messages, setMessages] = useState({});
@@ -54,124 +47,124 @@ const useChat = () => {
 
   const { socket, connected } = useSocket();
 
-  const updateChatListOptimistically = useCallback(
-    (message, isActiveChat = false) => {
-      if (!currentUserId) return;
+const updateChatListOptimistically = useCallback(
+  (message, isActiveChat = false) => {
+    if (!currentUserId) return;
 
-      const partnerId =
-        message.senderId === currentUserId
-          ? message.receiverId
-          : message.senderId;
+    const partnerId =
+      message.senderId === currentUserId
+        ? message.receiverId
+        : message.senderId;
 
-      setChatList((prevList) => {
-        const list = [...prevList];
-        const chatIndex = list.findIndex((chat) => chat.id === partnerId);
+    setChatList((prevList) => {
+      const list = [...prevList];
+      const chatIndex = list.findIndex((chat) => chat.id === partnerId);
 
-        let updatedChatEntry;
+      let updatedChatEntry;
 
-        if (chatIndex !== -1) {
-          updatedChatEntry = {
-            ...list[chatIndex],
-            lastMessage: message.isDeleted
-              ? "Message deleted"
-              : message.content,
-            lastMessageTimestamp: message.createdAt,
-            lastMessageType: message.contentType,
-            unreadCount:
-              message.receiverId === currentUserId &&
-              !isActiveChat &&
-              !message.isRead
-                ? (list[chatIndex].unreadCount || 0) + 1
-                : list[chatIndex].unreadCount,
-          };
-          list.splice(chatIndex, 1);
-          list.unshift(updatedChatEntry);
-        } else if (!message.isDeleted) {
-          console.warn("New chat detected, partner info might be missing.");
-          updatedChatEntry = {
-            id: partnerId,
-            name: "Loading...",
-            profilePic: "",
-            lastMessage: message.content,
-            lastMessageTimestamp: message.createdAt,
-            lastMessageType: message.contentType,
-            unreadCount:
-              message.receiverId === currentUserId && !isActiveChat ? 1 : 0,
-            isTyping: false,
-            online: false, // Default to false, updated by user_online
-          };
-          list.unshift(updatedChatEntry);
-        }
-        return list;
+      if (chatIndex !== -1) {
+        updatedChatEntry = {
+          ...list[chatIndex],
+          lastMessage: message.isDeleted ? "Message deleted" : message.content,
+          lastMessageTimestamp: message.createdAt,
+          lastMessageType: message.contentType,
+          unreadCount:
+            message.receiverId === currentUserId &&
+            !isActiveChat &&
+            !message.isRead
+              ? (list[chatIndex].unreadCount || 0) + 1
+              : list[chatIndex].unreadCount,
+        };
+        list.splice(chatIndex, 1);
+        list.unshift(updatedChatEntry);
+      } else if (!message.isDeleted) {
+        console.warn("New chat detected, partner info might be missing.");
+        updatedChatEntry = {
+          id: partnerId,
+          name: "Loading...",
+          profilePic: "",
+          lastMessage: message.content,
+          lastMessageTimestamp: message.createdAt,
+          lastMessageType: message.contentType,
+          unreadCount:
+            message.receiverId === currentUserId && !isActiveChat ? 1 : 0,
+          isTyping: false,
+          online: false,
+        };
+        list.unshift(updatedChatEntry);
+      }
+      return list;
+    });
+  },
+  [currentUserId]
+);
+
+const fetchChatList = useCallback(async () => {
+  if (!token || !currentUserId) {
+    console.log("No token or currentUserId, skipping fetchChatList");
+    setLoadingInitial(false);
+    return;
+  }
+  console.log("Fetching chat list with token:", token);
+  setLoadingInitial(true);
+  try {
+    const response = await axiosInstance.get("/messages/list", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("Chat list fetched:", response.data);
+    const onlineUsers = await axiosInstance.get("/messages/online", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("Online users fetched:", onlineUsers.data);
+    const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
+    const sortedList = response.data
+      .map((chat) => ({
+        ...chat,
+        online: onlineUserIds.has(chat.id),
+      }))
+      .sort((a, b) => {
+        if (!a.lastMessageTimestamp) return 1;
+        if (!b.lastMessageTimestamp) return -1;
+        return (
+          new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
+        );
       });
-    },
-    [currentUserId]
-  );
+    setChatList(sortedList);
+  } catch (error) {
+    console.error("Failed to fetch chat list:", error.response || error);
+  } finally {
+    setLoadingInitial(false);
+  }
+}, [token, currentUserId]);
 
-  const fetchChatList = useCallback(async () => {
-    if (!token) {
-      console.log("No token, skipping fetchChatList");
-      return;
-    }
-    console.log("Fetching chat list with token:", token);
-    setLoadingInitial(true);
-    try {
-      const response = await axiosInstance.get("/messages/list", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log("Chat list fetched:", response.data);
-      const onlineUsers = await axiosInstance.get("/messages/online", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log("Online users fetched:", onlineUsers.data);
-      const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
-      const sortedList = response.data
-        .map((chat) => ({
-          ...chat,
-          online: onlineUserIds.has(chat.id),
-        }))
-        .sort((a, b) => {
-          if (!a.lastMessageTimestamp) return 1;
-          if (!b.lastMessageTimestamp) return -1;
-          return (
-            new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
-          );
-        });
-      setChatList(sortedList);
-    } catch (error) {
-      console.error("Failed to fetch chat list:", error.response || error);
-    } finally {
-      setLoadingInitial(false);
-    }
-  }, [token]);
-
-  const loadSuggestions = useCallback(async () => {
-    if (!token) {
-      console.log("No token, skipping loadSuggestions");
-      return;
-    }
-    console.log("Fetching suggestions with token:", token);
-    setLoadingSuggestions(true);
-    try {
-      const response = await axiosInstance.get("/messages/suggestions", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log("Suggestions fetched:", response.data);
-      const onlineUsers = await axiosInstance.get("/messages/online", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
-      const updatedSuggestions = response.data.map((suggestion) => ({
-        ...suggestion,
-        online: onlineUserIds.has(suggestion._id),
-      }));
-      setSuggestions(updatedSuggestions);
-    } catch (error) {
-      console.error("Failed to fetch suggestions:", error.response || error);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  }, [token]);
+const loadSuggestions = useCallback(async () => {
+  if (!token || !currentUserId) {
+    console.log("No token or currentUserId, skipping loadSuggestions");
+    setLoadingSuggestions(false);
+    return;
+  }
+  console.log("Fetching suggestions with token:", token);
+  setLoadingSuggestions(true);
+  try {
+    const response = await axiosInstance.get("/messages/suggestions", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("Suggestions fetched:", response.data);
+    const onlineUsers = await axiosInstance.get("/messages/online", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const onlineUserIds = new Set(onlineUsers.data.map((user) => user._id));
+    const updatedSuggestions = response.data.map((suggestion) => ({
+      ...suggestion,
+      online: onlineUserIds.has(suggestion._id),
+    }));
+    setSuggestions(updatedSuggestions);
+  } catch (error) {
+    console.error("Failed to fetch suggestions:", error.response || error);
+  } finally {
+    setLoadingSuggestions(false);
+  }
+}, [token, currentUserId]);
 
   const handleIncomingMessage = useCallback(
     (message) => {
@@ -626,6 +619,7 @@ const useChat = () => {
     } else {
       console.log("Some conditions not met, skipping initial fetch");
       setLoadingInitial(false);
+      setLoadingSuggestions(false);
     }
   }, [token, currentUserId, connected, fetchChatList, loadSuggestions]);
 

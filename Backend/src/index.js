@@ -48,7 +48,7 @@ app.use(
     origin: process.env.VITE_APP_URL || "https://sociofy-ynkj.onrender.com",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   })
 );
 

@@ -18,20 +18,36 @@ export const useAuthStore = create((set) => ({
 
   checkAuth: async () => {
     try {
-      const { data } = await axiosInstance.get("/auth/check");
+      const response = await axiosInstance.get("/auth/check", {
+        withCredentials: true,
+      });
+      const { data } = response;
+      const tokenFromCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("jwt="))
+        ?.split("=")[1];
+
+      let token =
+        tokenFromCookie || data.token || localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No token found in response, cookie, or localStorage");
+      }
+
+      localStorage.setItem("token", token);
+      console.log("checkAuth - Token set:", token);
+
       set({
-        authUser: data.user,
+        authUser: data.user || data,
+        token,
         isCheckingAuth: false,
       });
-      localStorage.setItem("authUser", JSON.stringify(data.user));
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        console.log("checkAuth - Token set from response:", data.token);
-      }
-      emitter.emit("USER_UPDATED", data.user);
+      localStorage.setItem("authUser", JSON.stringify(data.user || data));
+      emitter.emit("USER_UPDATED", data.user || data);
     } catch (error) {
       console.error("checkAuth - User not authenticated:", error.message);
-      set({ authUser: null, isCheckingAuth: false });
+      localStorage.removeItem("token");
+      localStorage.removeItem("authUser");
+      set({ authUser: null, token: null, isCheckingAuth: false });
       emitter.emit("USER_UPDATED", null);
     }
   },

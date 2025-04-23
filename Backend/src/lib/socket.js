@@ -26,22 +26,23 @@ export function initSocket(server) {
   });
 
   io.use(async (socket, next) => {
-    const token = socket.handshake.auth.token;
-    // Handle token from auth or cookie
-    if (token && token.startsWith("Bearer ")) {
-      token = token.slice(7);
-    } else if (!token && socket.handshake.headers.cookie) {
-      token = socket.handshake.headers.cookie
-        .split("; ")
+    let token =
+      socket.handshake.auth.token ||
+      socket.handshake.headers.cookie
+        ?.split("; ")
         .find((row) => row.startsWith("jwt="))
         ?.split("=")[1];
-    }
-    console.log("Token received for HandShaking : ", token);
+
     if (!token) {
       console.error("Socket Auth Error: No token provided.");
       return next(new Error("Authentication error: No token"));
     }
 
+    // Handle Bearer token format
+    if (token.startsWith("Bearer ")) {
+      token = token.split(" ")[1];
+    }
+    
     try {
       const decoded = jwt.verify(token, process.env.JWT_ACTIVE_KEY);
       socket.user = { userId: decoded.userId };
