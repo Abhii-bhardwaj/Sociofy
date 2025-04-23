@@ -46,7 +46,7 @@ const postSchema = new mongoose.Schema({
       },
     },
   ],
-  save: [
+  saved: [
     {
       userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -56,7 +56,7 @@ const postSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
       },
-    }
+    },
   ],
   tags: [
     {
