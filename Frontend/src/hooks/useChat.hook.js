@@ -22,7 +22,7 @@ const getUserIdFromToken = (token) => {
 const useChat = () => {
   console.log("--- useChat Hook Executing ---");
 
-  const { authUser, token, checkAuth } = useAuthStore();
+  const { authUser, token, } = useAuthStore();
   const currentUserId = authUser?._id || null; // Directly use authUser._id
 
 
@@ -613,7 +613,6 @@ useEffect(() => {
   const initializeChat = async () => {
     if (!token && currentUserId) {
       console.log("No token, triggering checkAuth");
-      await checkAuth();
       return;
     }
 
@@ -637,7 +636,7 @@ useEffect(() => {
   connected,
   fetchChatList,
   loadSuggestions,
-  checkAuth,
+ 
 ]);
 
   useEffect(() => {
