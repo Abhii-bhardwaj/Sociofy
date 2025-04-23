@@ -22,23 +22,20 @@ export function initSocket(server) {
       methods: ["GET", "POST"],
       credentials: true,
     },
+    transports: ["websocket", "polling"],
   });
 
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
-    // Handle Bearer prefix
+    // Handle token from auth or cookie
     if (token && token.startsWith("Bearer ")) {
       token = token.slice(7);
-    } else if (
-      socket.handshake.headers.cookie &&
-      !token // Fallback to cookie
-    ) {
+    } else if (!token && socket.handshake.headers.cookie) {
       token = socket.handshake.headers.cookie
         .split("; ")
         .find((row) => row.startsWith("jwt="))
         ?.split("=")[1];
     }
-
     if (!token) {
       console.error("Socket Auth Error: No token provided.");
       return next(new Error("Authentication error: No token"));
@@ -52,7 +49,8 @@ export function initSocket(server) {
     } catch (err) {
       console.error(
         "Socket Auth Error: Token verification failed:",
-        err.message
+        err.message,
+        token,
       );
       next(new Error("Authentication error: Invalid token"));
     }

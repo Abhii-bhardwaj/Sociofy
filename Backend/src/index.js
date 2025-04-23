@@ -135,5 +135,9 @@ app.use((err, req, res, next) => {
 server.listen(PORT, () => {
   // Changed to server.listen
   console.log(`🚀 Server started on port ${PORT}`);
+  console.log("CORS origins:", [
+    process.env.VITE_APP_URL || "http://localhost:5173",
+    "https://sociofy-frontend.onrender.com",
+  ]);
   connectDB();
 });

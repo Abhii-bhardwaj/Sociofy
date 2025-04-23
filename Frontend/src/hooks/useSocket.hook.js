@@ -34,12 +34,15 @@ export const useSocket = (initializeListeners = () => {}) => {
 
     // Initialize socket only once
     const socketInstance = io(SOCKET_URL, {
-      auth: { token: `Bearer ${token}` }, // Explicit Bearer token
+      auth: { token }, // Explicit Bearer token
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       withCredentials: true,
       transports: ["websocket", "polling"], // Fallback to polling if WebSocket fails
+      extraHeaders: {
+        "X-Socket-Origin": SOCKET_URL || "https://sociofy-ynkj.onrender.com",
+      },
     });
 
     socketInstance.on("connect", () => {
