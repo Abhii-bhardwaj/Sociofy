@@ -36,6 +36,7 @@ export function initSocket(server) {
         .find((row) => row.startsWith("jwt="))
         ?.split("=")[1];
     }
+    console.log("Token received for HandShaking : ", token);
     if (!token) {
       console.error("Socket Auth Error: No token provided.");
       return next(new Error("Authentication error: No token"));
@@ -50,7 +51,7 @@ export function initSocket(server) {
       console.error(
         "Socket Auth Error: Token verification failed:",
         err.message,
-        token,
+        token
       );
       next(new Error("Authentication error: Invalid token"));
     }
@@ -70,7 +71,7 @@ export function initSocket(server) {
     // Add user to onlineUsers in Redis and emit user_online
     redis.sadd("onlineUsers", userId).catch((err) => {
       console.error("Redis Error: Failed to add user to onlineUsers:", err);
-    });;
+    });
     io.emit("user_online", { userId }); // Broadcast to all clients
     console.log(`Emitted user_online for ${userId}`);
 
