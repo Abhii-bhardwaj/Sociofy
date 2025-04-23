@@ -3,7 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { useAuthStore } from "../store/useAuthStore";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5001";
+const SOCKET_URL =
+  import.meta.env.VITE_API_URL || "https://sociofy-backend.onrender.com";
 
 export const useSocket = (initializeListeners = () => {}) => {
   const [socket, setSocket] = useState(null);
