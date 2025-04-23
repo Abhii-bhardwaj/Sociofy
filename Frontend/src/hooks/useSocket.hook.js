@@ -13,15 +13,15 @@ export const useSocket = (initializeListeners = () => {}) => {
 
   useEffect(() => {
     isMounted.current = true; // Mark as mounted
+    console.log("useSocket: Initializing", {
+      isCheckingAuth,
+      authUser: !!authUser,
+      token,
+      SOCKET_URL,
+    });
 
-    if (isCheckingAuth) {
-      console.log("useSocket: Waiting for auth check...");
-      return;
-    }
-
-    if (!authUser || !token) {
-      console.log("useSocket: No authUser or token, triggering checkAuth");
-      checkAuth();
+    if (isCheckingAuth || !authUser || !token) {
+      console.log("Waiting for auth check or authUser/token...");
       return;
     }
 

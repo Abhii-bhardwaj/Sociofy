@@ -59,7 +59,7 @@ const App = () => {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []);
 
   useEffect(() => {
     if (isCheckingAuth) return;
