@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { useAuthStore } from "../store/useAuthStore";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const SOCKET_URL = import.meta.env.VITE_API_URL;
 
 export const useSocket = (initializeListeners = () => {}) => {
   const [socket, setSocket] = useState(null);
@@ -14,8 +14,14 @@ export const useSocket = (initializeListeners = () => {}) => {
   useEffect(() => {
     isMounted.current = true; // Mark as mounted
 
-    if (isCheckingAuth || !authUser || !token) {
-      console.log("Waiting for auth check or authUser/token...");
+    if (isCheckingAuth) {
+      console.log("useSocket: Waiting for auth check...");
+      return;
+    }
+
+    if (!authUser || !token) {
+      console.log("useSocket: No authUser or token, triggering checkAuth");
+      checkAuth();
       return;
     }
 
@@ -28,12 +34,12 @@ export const useSocket = (initializeListeners = () => {}) => {
 
     // Initialize socket only once
     const socketInstance = io(SOCKET_URL, {
-      auth: { token },
+      auth: { token: `Bearer ${token}` }, // Explicit Bearer token
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       withCredentials: true,
-      transports: ["websocket"],
+      transports: ["websocket", "polling"], // Fallback to polling if WebSocket fails
     });
 
     socketInstance.on("connect", () => {

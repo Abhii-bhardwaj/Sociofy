@@ -27,7 +27,9 @@ const useChat = () => {
 
   useEffect(() => {
     const newUserId = getUserIdFromToken(token);
-    console.log(`Token changed, calculated userId: ${newUserId}`);
+    console.log(
+      `Token changed, calculated userId: ${newUserId}, token: ${token}`
+    );
     setCurrentUserId(newUserId);
   }, [token]);
 

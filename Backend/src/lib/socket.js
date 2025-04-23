@@ -18,19 +18,26 @@ let io;
 export function initSocket(server) {
   io = new Server(server, {
     cors: {
-      origin: process.env.VITE_APP_URL || "http://localhost:5173",
+      origin: process.env.VITE_APP_URL || "https://sociofy-ynkj.onrender.com",
       methods: ["GET", "POST"],
       credentials: true,
     },
   });
 
   io.use(async (socket, next) => {
-    const token =
-      socket.handshake.auth.token ||
-      socket.handshake.headers.cookie
-        ?.split("; ")
+    const token = socket.handshake.auth.token;
+    // Handle Bearer prefix
+    if (token && token.startsWith("Bearer ")) {
+      token = token.slice(7);
+    } else if (
+      socket.handshake.headers.cookie &&
+      !token // Fallback to cookie
+    ) {
+      token = socket.handshake.headers.cookie
+        .split("; ")
         .find((row) => row.startsWith("jwt="))
         ?.split("=")[1];
+    }
 
     if (!token) {
       console.error("Socket Auth Error: No token provided.");
@@ -40,6 +47,7 @@ export function initSocket(server) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_ACTIVE_KEY);
       socket.user = { userId: decoded.userId };
+      console.log("Socket Auth: Token verified, userId:", decoded.userId);
       next();
     } catch (err) {
       console.error(
@@ -62,7 +70,9 @@ export function initSocket(server) {
     socket.join(userId);
 
     // Add user to onlineUsers in Redis and emit user_online
-    redis.sAdd("onlineUsers", userId);
+    redis.sadd("onlineUsers", userId).catch((err) => {
+      console.error("Redis Error: Failed to add user to onlineUsers:", err);
+    });;
     io.emit("user_online", { userId }); // Broadcast to all clients
     console.log(`Emitted user_online for ${userId}`);
 
