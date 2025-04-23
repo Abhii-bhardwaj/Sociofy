@@ -5,46 +5,57 @@ import emitter from "../lib/eventEmitter";
 
 export const useAuthStore = create((set) => ({
   authUser: JSON.parse(localStorage.getItem("authUser")) || null,
-  setAuthUser: (user) => {
-    localStorage.setItem("authUser", JSON.stringify(user));
-    set({ authUser: user });
-    emitter.emit("USER_UPDATED", user);
-  },
+  token: localStorage.getItem("token") || null,
   isSigningUp: false,
   isLoggingIn: false,
   isCheckingAuth: true,
-  token: localStorage.getItem("token") || null,
   error: null,
 
+  setAuthUser: (user, token) => {
+    console.log("setAuthUser - Setting user and token:", { user, token });
+    localStorage.setItem("authUser", JSON.stringify(user));
+    localStorage.setItem("token", token);
+    set({ authUser: user, token });
+    emitter.emit("USER_UPDATED", user);
+  },
+
   checkAuth: async () => {
+    set({ isCheckingAuth: true });
     try {
       const response = await axiosInstance.get("/auth/check", {
         withCredentials: true,
       });
       const { data } = response;
-      const tokenFromCookie = document.cookie
+
+      // Fetch token from cookie, response, or localStorage
+      let token = document.cookie
         .split("; ")
         .find((row) => row.startsWith("jwt="))
         ?.split("=")[1];
 
-      let token =
-        tokenFromCookie || data.token || localStorage.getItem("token");
+      if (!token && data.token) {
+        token = data.token;
+      }
       if (!token) {
-        throw new Error("No token found in response, cookie, or localStorage");
+        token = localStorage.getItem("token");
       }
 
+      if (!token) {
+        throw new Error("No token found in cookie, response, or localStorage");
+      }
+
+      console.log("checkAuth - Token fetched:", token);
       localStorage.setItem("token", token);
-      console.log("checkAuth - Token set:", token);
+      localStorage.setItem("authUser", JSON.stringify(data.user || data));
 
       set({
         authUser: data.user || data,
         token,
         isCheckingAuth: false,
       });
-      localStorage.setItem("authUser", JSON.stringify(data.user || data));
       emitter.emit("USER_UPDATED", data.user || data);
     } catch (error) {
-      console.error("checkAuth - User not authenticated:", error.message);
+      console.error("checkAuth - Authentication failed:", error.message);
       localStorage.removeItem("token");
       localStorage.removeItem("authUser");
       set({ authUser: null, token: null, isCheckingAuth: false });
@@ -91,34 +102,34 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  login: async (data) => {
+  login: async (email, password) => {
     set({ isLoggingIn: true, error: null });
     try {
-      const response = await axiosInstance.post("/auth/login", data, {
-        withCredentials: true,
+      const response = await axiosInstance.post("/auth/login", {
+        email,
+        password,
       });
-      const token = response.data.token;
-      console.log("Login - Token from response:", token);
+      const { data } = response;
+      console.log("login - Token from response:", data.token);
 
-      if (token) {
-        localStorage.setItem("token", token);
-        set({ authUser: { ...response.data, role: response.data.role } });
-        localStorage.setItem(
-          "authUser",
-          JSON.stringify({ ...response.data, role: response.data.role })
-        );
-        toast.success("Logged in successfully");
-        emitter.emit("USER_UPDATED", {
-          ...response.data,
-          role: response.data.role,
-        });
-      } else {
+      if (!data.token) {
         throw new Error("No token received in login response");
       }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("authUser", JSON.stringify(data.user));
+      set({
+        authUser: data.user,
+        token: data.token,
+        isLoggingIn: false,
+      });
+      emitter.emit("USER_UPDATED", data.user);
+      toast.success("Logged in successfully");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
-    } finally {
-      set({ isLoggingIn: false });
+      const message = error.response?.data?.message || "Login failed";
+      set({ isLoggingIn: false, error: message });
+      toast.error(message);
+      throw error;
     }
   },
 

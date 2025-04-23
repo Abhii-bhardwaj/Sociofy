@@ -603,25 +603,46 @@ const loadSuggestions = useCallback(async () => {
     handleUserOffline,
   ]);
 
-  useEffect(() => {
+useEffect(() => {
     console.log("useEffect for initial fetch - Conditions:", {
       token: !!token,
       userId: currentUserId,
-      connected: !!connected,
+      connected: connected,
     });
 
-    if (token && currentUserId && connected) {
-      console.log(
-        "All conditions met, triggering fetchChatList and loadSuggestions"
-      );
-      fetchChatList();
-      loadSuggestions();
-    } else {
-      console.log("Some conditions not met, skipping initial fetch");
-      setLoadingInitial(false);
-      setLoadingSuggestions(false);
-    }
-  }, [token, currentUserId, connected, fetchChatList, loadSuggestions]);
+    const initializeChat = async () => {
+      if (!token && currentUserId) {
+        console.log("No token, triggering checkAuth");
+        await checkAuth();
+        return;
+      }
+
+      if (token && currentUserId && connected) {
+        console.log("All conditions met, triggering fetchChatList and loadSuggestions");
+        fetchChatList();
+        loadSuggestions();
+      } else {
+        console.log("Some conditions not met, skipping initial fetch");
+        setLoadingInitial(false);
+        setLoadingSuggestions(false);
+      }
+    };
+
+    initializeChat();
+  }, [token, currentUserId, connected, fetchChatList, loadSuggestions, checkAuth]);
+
+  if (token && currentUserId && connected) {
+    console.log(
+      "All conditions met, triggering fetchChatList and loadSuggestions"
+    );
+    fetchChatList();
+    loadSuggestions();
+  } else {
+    console.log("Some conditions not met, skipping initial fetch");
+    setLoadingInitial(false);
+    setLoadingSuggestions(false);
+  }
+}, [token, currentUserId, connected, fetchChatList, loadSuggestions]);
 
   useEffect(() => {
     if (activeChatId && connected && socket) {

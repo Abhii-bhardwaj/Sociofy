@@ -15,56 +15,68 @@ export const useSocket = (initializeListeners = () => {}) => {
   useEffect(() => {
     isMounted.current = true;
 
-    if (isCheckingAuth || !authUser || !token) {
-      console.log("useSocket - Waiting for auth check or authUser/token...", {
-        isCheckingAuth,
-        authUser: !!authUser,
-        token: !!token,
+    const initializeSocket = async () => {
+      if (isCheckingAuth) {
+        console.log("useSocket - Waiting for auth check...");
+        return;
+      }
+
+      if (!authUser || !token) {
+        console.log("useSocket - No authUser or token, triggering checkAuth:", {
+          authUser: !!authUser,
+          token: !!token,
+        });
+        await checkAuth();
+        return;
+      }
+
+      if (socketRef.current && socketRef.current.connected) {
+        console.log(
+          "useSocket - Reusing existing socket:",
+          socketRef.current.id
+        );
+        setSocket(socketRef.current);
+        return;
+      }
+
+      console.log("useSocket - Initializing socket with token:", token);
+      const socketInstance = io(SOCKET_URL, {
+        auth: { token },
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        withCredentials: true,
+        transports: ["websocket"],
       });
-      return;
-    }
 
-    if (socketRef.current && socketRef.current.connected) {
-      console.log("useSocket - Reusing existing socket:", socketRef.current.id);
-      setSocket(socketRef.current);
-      return;
-    }
+      socketInstance.on("connect", () => {
+        console.log("useSocket - Socket connected:", socketInstance.id);
+        socketInstance.emit("join", authUser._id);
+        if (isMounted.current) {
+          setSocket(socketInstance);
+        }
+      });
 
-    console.log("useSocket - Initializing new socket with token:", token);
-    const socketInstance = io(SOCKET_URL, {
-      auth: { token },
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      withCredentials: true,
-      transports: ["websocket"],
-    });
+      socketInstance.on("connect_error", (error) => {
+        console.error("useSocket - Socket connection error:", error.message);
+        if (error.message.includes("Authentication error")) {
+          console.log("useSocket - Invalid token, triggering checkAuth");
+          checkAuth();
+        }
+      });
 
-    socketInstance.on("connect", () => {
-      console.log("useSocket - Socket connected:", socketInstance.id);
-      socketInstance.emit("join", authUser._id);
-      if (isMounted.current) {
-        setSocket(socketInstance);
-      }
-    });
+      socketInstance.on("disconnect", (reason) => {
+        console.log("useSocket - Socket disconnected:", reason);
+        if (isMounted.current) {
+          setSocket(null);
+        }
+      });
 
-    socketInstance.on("connect_error", (error) => {
-      console.error("useSocket - Socket connection error:", error.message);
-      if (!token) {
-        console.log("useSocket - No token, triggering checkAuth");
-        checkAuth();
-      }
-    });
+      socketRef.current = socketInstance;
+      initializeListeners(socketInstance);
+    };
 
-    socketInstance.on("disconnect", (reason) => {
-      console.log("useSocket - Socket disconnected:", reason);
-      if (isMounted.current) {
-        setSocket(null);
-      }
-    });
-
-    socketRef.current = socketInstance;
-    initializeListeners(socketInstance);
+    initializeSocket();
 
     return () => {
       isMounted.current = false;
